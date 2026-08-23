@@ -196,6 +196,37 @@
     <div class="hist-list" id="histList"></div>
   </section>
 
+  <section class="block">
+    <div class="block-head" id="reportsHead">
+      <h2>Relatórios</h2>
+      <span class="chev" id="reportsChev">▾</span>
+    </div>
+    <div class="block-body" id="reportsBody">
+      <div class="mode-toggle" style="margin-top:12px;">
+        <button id="repModeMonth" class="active">Por mês</button>
+        <button id="repModePeriod">Por período</button>
+      </div>
+      <div id="repMonthFields" class="field-row">
+        <label for="repMonth">Mês</label>
+        <input type="month" id="repMonth">
+      </div>
+      <div id="repPeriodFields" class="modal-grid" style="display:none;">
+        <div><label>De</label><input type="date" id="repFrom"></div>
+        <div><label>Até</label><input type="date" id="repTo"></div>
+      </div>
+      <button class="save-settings" id="repSearchBtn">Buscar</button>
+
+      <div class="summary-bar" id="repSummary" style="margin-top:18px;">
+        <div class="stat"><div class="stat-lbl">Trabalhado</div><div class="stat-val" id="repTrabalhado">0h00</div></div>
+        <div class="stat"><div class="stat-lbl">Esperado</div><div class="stat-val" id="repEsperado">0h00</div></div>
+        <div class="stat" id="repStatSaldo"><div class="stat-lbl">Saldo</div><div class="stat-val" id="repSaldo">0h00</div></div>
+        <div class="stat"><div class="stat-lbl">Dias registrados</div><div class="stat-val" id="repDias">0</div></div>
+      </div>
+
+      <div class="hist-list" id="repList" style="margin-top:6px;"></div>
+    </div>
+  </section>
+
   <div class="footer-note">Dados salvos neste aparelho · <button id="resetBtn">apagar todos os dados</button></div>
 
 </div>
@@ -486,6 +517,105 @@
 
   function renderAll(){ renderPunchCard(); renderSummary(); renderSettings(); renderHistory(); }
 
+  // ---------- relatórios (por mês / por período) ----------
+  function keyFromDate(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+
+  function repSetMode(mode){
+    document.getElementById('repModeMonth').classList.toggle('active', mode==='month');
+    document.getElementById('repModePeriod').classList.toggle('active', mode==='period');
+    document.getElementById('repMonthFields').style.display = mode==='month' ? 'flex' : 'none';
+    document.getElementById('repPeriodFields').style.display = mode==='period' ? 'grid' : 'none';
+  }
+
+  function setRepStat(valId, mins){
+    document.getElementById(valId).textContent = minutesToLabel(mins);
+  }
+
+  function runReport(){
+    const isMonth = document.getElementById('repModeMonth').classList.contains('active');
+    let startKey, endKey;
+    if(isMonth){
+      const val = document.getElementById('repMonth').value;
+      if(!val) return;
+      const [y,m] = val.split('-').map(Number);
+      startKey = keyFromDate(new Date(y, m-1, 1));
+      endKey = keyFromDate(new Date(y, m, 0));
+    } else {
+      startKey = document.getElementById('repFrom').value;
+      endKey = document.getElementById('repTo').value;
+      if(!startKey || !endKey) return;
+    }
+    const start = dateKeyToDate(startKey);
+    const end = dateKeyToDate(endKey);
+    if(end < start){
+      alert('A data final precisa ser depois da data inicial.');
+      return;
+    }
+
+    let workedTotal = 0, expectedTotal = 0, diasRegistrados = 0;
+    const rows = [];
+    const cur = new Date(start);
+    while(cur <= end){
+      const key = keyFromDate(cur);
+      const entry = state.entries[key];
+      expectedTotal += expectedMinutes(key);
+      if(hasAnyData(entry)){
+        diasRegistrados++;
+        workedTotal += workedMinutes(entry);
+        rows.push(key);
+      }
+      cur.setDate(cur.getDate()+1);
+    }
+    const saldoTotal = workedTotal - expectedTotal;
+
+    setRepStat('repTrabalhado', workedTotal);
+    setRepStat('repEsperado', expectedTotal);
+    setRepStat('repSaldo', saldoTotal);
+    document.getElementById('repDias').textContent = diasRegistrados;
+    const saldoBox = document.getElementById('repStatSaldo');
+    saldoBox.classList.remove('pos','neg');
+    if(saldoTotal > 0) saldoBox.classList.add('pos'); else if(saldoTotal < 0) saldoBox.classList.add('neg');
+
+    const listEl = document.getElementById('repList');
+    if(rows.length === 0){
+      listEl.innerHTML = '<div class="empty-hist">Nenhum dia registrado nesse intervalo.</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+    rows.forEach(key=>{
+      const entry = state.entries[key];
+      const d = dateKeyToDate(key);
+      const worked = workedMinutes(entry);
+      const saldo = saldoMinutes(key, entry);
+      const saldoClass = saldo>0?'pos':(saldo<0?'neg':'zero');
+      const timesStr = entry.manualMinutes!=null ? 'Total manual: ' + minutesToLabel(entry.manualMinutes) : SLOT_KEYS.map(k=>entry[k]||'--:--').join(' · ');
+      const row = document.createElement('div');
+      row.className = 'hist-row';
+      row.innerHTML = `
+        <div class="hist-left">
+          <div class="hist-date"><span class="wd">${WEEKDAYS[d.getDay()]}</span><span class="dm">${pad(d.getDate())}/${pad(d.getMonth()+1)}</span></div>
+          <div class="hist-times">${timesStr}</div>
+        </div>
+        <div class="hist-right">
+          <div class="hist-worked">${minutesToLabel(worked)}</div>
+          <div class="hist-saldo ${saldoClass}">${saldo>=0?'+':''}${minutesToLabel(saldo)}</div>
+        </div>`;
+      listEl.appendChild(row);
+    });
+  }
+
+  function initReports(){
+    const now = new Date();
+    document.getElementById('repMonth').value = now.getFullYear()+'-'+pad(now.getMonth()+1);
+    document.getElementById('reportsHead').addEventListener('click', ()=>{
+      document.getElementById('reportsBody').classList.toggle('open');
+      document.getElementById('reportsChev').classList.toggle('open');
+    });
+    document.getElementById('repModeMonth').addEventListener('click', ()=>repSetMode('month'));
+    document.getElementById('repModePeriod').addEventListener('click', ()=>repSetMode('period'));
+    document.getElementById('repSearchBtn').addEventListener('click', runReport);
+  }
+
   document.getElementById('punchBtn').addEventListener('click', punchNow);
   document.getElementById('addDayBtn').addEventListener('click', ()=>openModal(null));
   document.getElementById('modalCancel').addEventListener('click', closeModal);
@@ -514,6 +644,8 @@
   tickClock();
   setInterval(tickClock, 1000);
   loadData();
+  initReports();
+  runReport();
 
   if('serviceWorker' in navigator){
     window.addEventListener('load', ()=>{
