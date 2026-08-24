@@ -72,13 +72,12 @@
   .pc-today-total{font-size:13px;color:#5b5648;font-weight:600;}
   .pc-today-total b{font-family:'Space Mono',monospace;color:var(--ink);}
 
-  .summary-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:20px 0;}
+  .summary-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:10px;margin:20px 0;}
   .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 12px;}
   .stat .stat-lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--text-muted);font-weight:600;margin-bottom:8px;}
   .stat .stat-val{font-size:19px;font-weight:700;font-family:'Space Mono',monospace;}
   .stat.pos .stat-val{color:var(--teal);}
   .stat.neg .stat-val{color:var(--coral);}
-  @media(max-width:560px){.summary-bar{grid-template-columns:repeat(2,1fr);}}
 
   section.block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;}
   .block-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;user-select:none;}
@@ -110,6 +109,7 @@
   .hist-times{font-size:11.5px;color:var(--text-muted);font-family:'Space Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .hist-right{display:flex;align-items:center;gap:14px;flex-shrink:0;}
   .hist-worked{font-size:13px;font-weight:700;font-family:'Space Mono',monospace;}
+  .hist-earn{font-size:11.5px;font-weight:600;font-family:'Space Mono',monospace;color:var(--amber);}
   .hist-saldo{font-size:12.5px;font-weight:700;font-family:'Space Mono',monospace;padding:3px 8px;border-radius:6px;}
   .hist-saldo.pos{color:var(--teal);background:rgba(79,176,165,.12);}
   .hist-saldo.neg{color:var(--coral);background:rgba(226,96,76,.12);}
@@ -170,6 +170,7 @@
     <div class="stat" id="statSaldoDia"><div class="stat-lbl">Saldo do dia</div><div class="stat-val" id="vSaldoDia">0h00</div></div>
     <div class="stat" id="statBanco"><div class="stat-lbl">Banco de horas</div><div class="stat-val" id="vBanco">0h00</div></div>
     <div class="stat" id="statMes"><div class="stat-lbl">Extra no mês</div><div class="stat-val" id="vMes">0h00</div></div>
+    <div class="stat"><div class="stat-lbl">Ganho hoje</div><div class="stat-val" id="vGanhoHoje">R$ 0,00</div></div>
   </div>
 
   <section class="block">
@@ -183,6 +184,10 @@
       <div class="field-row">
         <label for="dailyHours">Jornada diária (horas)</label>
         <input type="number" id="dailyHours" min="0" step="0.5" value="8">
+      </div>
+      <div class="field-row">
+        <label for="hourlyRate">Valor da hora (R$)</label>
+        <input type="number" id="hourlyRate" min="0" step="0.01" value="0">
       </div>
       <button class="save-settings" id="saveSettingsBtn">Salvar rotina</button>
     </div>
@@ -221,6 +226,7 @@
         <div class="stat"><div class="stat-lbl">Esperado</div><div class="stat-val" id="repEsperado">0h00</div></div>
         <div class="stat" id="repStatSaldo"><div class="stat-lbl">Saldo</div><div class="stat-val" id="repSaldo">0h00</div></div>
         <div class="stat"><div class="stat-lbl">Dias registrados</div><div class="stat-val" id="repDias">0</div></div>
+        <div class="stat"><div class="stat-lbl">Ganho no período</div><div class="stat-val" id="repGanho">R$ 0,00</div></div>
       </div>
 
       <div class="hist-list" id="repList" style="margin-top:6px;"></div>
@@ -263,7 +269,7 @@
   const SLOT_KEYS = ['entrada','saidaAlmoco','voltaAlmoco','saida'];
   const SLOT_LABELS = {entrada:'Entrada', saidaAlmoco:'Saída alm.', voltaAlmoco:'Volta alm.', saida:'Saída'};
 
-  let state = { settings:{ dailyHours:8, workDays:[1,2,3,4,5] }, entries:{} };
+  let state = { settings:{ dailyHours:8, workDays:[1,2,3,4,5], hourlyRate:0 }, entries:{} };
   let editingDate = null;
 
   function pad(n){ return String(n).padStart(2,'0'); }
@@ -275,6 +281,13 @@
     const abs = Math.abs(Math.round(mins));
     const h = Math.floor(abs/60), m = abs%60;
     return sign + h + 'h' + pad(m);
+  }
+  function earningsForMinutes(mins){
+    const rate = state.settings.hourlyRate || 0;
+    return (mins/60) * rate;
+  }
+  function formatCurrency(val){
+    return 'R$ ' + (val||0).toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 });
   }
 
   function getEntry(key){
@@ -402,6 +415,7 @@
       }
     });
     document.getElementById('vHoje').textContent = minutesToLabel(worked);
+    document.getElementById('vGanhoHoje').textContent = formatCurrency(earningsForMinutes(worked));
     setStat('statSaldoDia','vSaldoDia', saldoDia);
     setStat('statBanco','vBanco', banco);
     setStat('statMes','vMes', mesExtra);
@@ -430,6 +444,7 @@
       row.appendChild(chip);
     });
     document.getElementById('dailyHours').value = state.settings.dailyHours;
+    document.getElementById('hourlyRate').value = state.settings.hourlyRate || 0;
   }
 
   function renderHistory(){
@@ -456,6 +471,7 @@
         </div>
         <div class="hist-right">
           <div class="hist-worked">${minutesToLabel(worked)}</div>
+          <div class="hist-earn">${formatCurrency(earningsForMinutes(worked))}</div>
           <div class="hist-saldo ${saldoClass}">${saldo>=0?'+':''}${minutesToLabel(saldo)}</div>
           <div class="hist-actions">
             <button class="icon-btn" data-edit="${key}" aria-label="Editar dia">✎</button>
@@ -567,11 +583,13 @@
       cur.setDate(cur.getDate()+1);
     }
     const saldoTotal = workedTotal - expectedTotal;
+    const ganhoTotal = earningsForMinutes(workedTotal);
 
     setRepStat('repTrabalhado', workedTotal);
     setRepStat('repEsperado', expectedTotal);
     setRepStat('repSaldo', saldoTotal);
     document.getElementById('repDias').textContent = diasRegistrados;
+    document.getElementById('repGanho').textContent = formatCurrency(ganhoTotal);
     const saldoBox = document.getElementById('repStatSaldo');
     saldoBox.classList.remove('pos','neg');
     if(saldoTotal > 0) saldoBox.classList.add('pos'); else if(saldoTotal < 0) saldoBox.classList.add('neg');
@@ -598,6 +616,7 @@
         </div>
         <div class="hist-right">
           <div class="hist-worked">${minutesToLabel(worked)}</div>
+          <div class="hist-earn">${formatCurrency(earningsForMinutes(worked))}</div>
           <div class="hist-saldo ${saldoClass}">${saldo>=0?'+':''}${minutesToLabel(saldo)}</div>
         </div>`;
       listEl.appendChild(row);
@@ -630,8 +649,11 @@
   document.getElementById('saveSettingsBtn').addEventListener('click', ()=>{
     const hrs = parseFloat(document.getElementById('dailyHours').value);
     state.settings.dailyHours = isNaN(hrs) ? 8 : hrs;
+    const rate = parseFloat(document.getElementById('hourlyRate').value);
+    state.settings.hourlyRate = isNaN(rate) ? 0 : rate;
     saveData();
     renderAll();
+    runReport();
   });
   document.getElementById('resetBtn').addEventListener('click', ()=>{
     if(confirm('Isso vai apagar todos os pontos e a rotina salva neste aparelho. Continuar?')){
