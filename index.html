@@ -162,37 +162,42 @@
   .user-email{font-size:11.5px;color:var(--text-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .logout-btn{background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
   .logout-btn:hover{border-color:var(--amber-dim);}
+  .lang-switch{display:flex;gap:4px;}
+  .lang-switch button{background:var(--surface-2);border:1px solid var(--border);color:var(--text-muted);border-radius:6px;padding:4px 7px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.03em;}
+  .lang-switch button.active{background:var(--amber);color:#1B222C;border-color:var(--amber);}
+  .auth-lang{display:flex;justify-content:center;margin-bottom:14px;}
 </style>
 </head>
 <body>
 
-<div class="loading-screen" id="loadingScreen">Carregando…</div>
+<div class="loading-screen" id="loadingScreen" data-i18n="loading">Carregando…</div>
 
 <div class="auth-screen" id="authScreen" style="display:none;">
   <div class="auth-wrap">
     <div class="auth-card">
+      <div class="auth-lang" id="authLangSwitch"></div>
       <div class="auth-brand">
-        <div class="eyebrow">Registro de jornada</div>
-        <div class="title">Cartão de Ponto</div>
+        <div class="eyebrow" data-i18n="eyebrow">Registro de jornada</div>
+        <div class="title" data-i18n="appTitle">Cartão de Ponto</div>
       </div>
       <div class="auth-tabs">
-        <button type="button" id="authTabLogin" class="active">Entrar</button>
-        <button type="button" id="authTabSignup">Criar conta</button>
+        <button type="button" id="authTabLogin" class="active" data-i18n="authTabLogin">Entrar</button>
+        <button type="button" id="authTabSignup" data-i18n="authTabSignup">Criar conta</button>
       </div>
       <form id="authForm">
         <div class="auth-field">
-          <label for="authEmail">E-mail</label>
+          <label for="authEmail" data-i18n="emailLabel">E-mail</label>
           <input type="email" id="authEmail" autocomplete="email" required>
         </div>
         <div class="auth-field">
-          <label for="authSenha">Senha</label>
+          <label for="authSenha" data-i18n="passwordLabel">Senha</label>
           <input type="password" id="authSenha" autocomplete="current-password" required minlength="6">
         </div>
-        <button type="submit" class="auth-submit" id="authSubmitBtn">Entrar</button>
+        <button type="submit" class="auth-submit" id="authSubmitBtn" data-i18n="authTabLogin">Entrar</button>
         <div class="auth-error" id="authError"></div>
       </form>
       <div class="auth-forgot">
-        <button type="button" id="forgotBtn">Esqueci minha senha</button>
+        <button type="button" id="forgotBtn" data-i18n="forgotPassword">Esqueci minha senha</button>
       </div>
     </div>
   </div>
@@ -201,15 +206,15 @@
 <div class="app" id="appRoot" style="display:none;">
 
   <div class="user-bar">
+    <div class="lang-switch" id="appLangSwitch"></div>
     <span class="user-email" id="userEmail"></span>
-    <button class="logout-btn" id="logoutBtn">Sair</button>
+    <button class="logout-btn" id="logoutBtn" data-i18n="logout">Sair</button>
   </div>
-
 
   <header>
     <div class="brand">
-      <span class="eyebrow">Registro de jornada</span>
-      <h1>Cartão de Ponto</h1>
+      <span class="eyebrow" data-i18n="eyebrow">Registro de jornada</span>
+      <h1 data-i18n="appTitle">Cartão de Ponto</h1>
     </div>
     <div class="clockbox">
       <div class="live mono" id="liveClock">--:--:--</div>
@@ -219,109 +224,109 @@
 
   <div class="punch-card">
     <div class="pc-top">
-      <span class="pc-title">Hoje</span>
+      <span class="pc-title" data-i18n="today">Hoje</span>
       <span class="pc-day mono" id="pcDayLabel">-</span>
     </div>
     <div class="pc-slots" id="pcSlots"></div>
     <div class="pc-bottom">
-      <button class="punch-btn" id="punchBtn"><span class="stamp-dot"></span><span id="punchBtnLbl">Bater ponto</span></button>
-      <div class="pc-today-total">Hoje: <b class="mono" id="pcTodayTotal">0h00</b></div>
+      <button class="punch-btn" id="punchBtn"><span class="stamp-dot"></span><span id="punchBtnLbl" data-i18n="punchDefault">Bater ponto</span></button>
+      <div class="pc-today-total"><span data-i18n="todayLabelPrefix">Hoje:</span> <b class="mono" id="pcTodayTotal">0h00</b></div>
     </div>
   </div>
 
   <div class="summary-bar">
-    <div class="stat" id="statHoje"><div class="stat-lbl">Trabalhado hoje</div><div class="stat-val" id="vHoje">0h00</div></div>
-    <div class="stat" id="statSaldoDia"><div class="stat-lbl">Saldo do dia</div><div class="stat-val" id="vSaldoDia">0h00</div></div>
-    <div class="stat" id="statBanco"><div class="stat-lbl">Banco de horas</div><div class="stat-val" id="vBanco">0h00</div></div>
-    <div class="stat" id="statMes"><div class="stat-lbl">Extra no mês</div><div class="stat-val" id="vMes">0h00</div></div>
-    <div class="stat"><div class="stat-lbl">Ganho hoje</div><div class="stat-val" id="vGanhoHoje">R$ 0,00</div></div>
+    <div class="stat" id="statHoje"><div class="stat-lbl" data-i18n="statWorkedToday">Trabalhado hoje</div><div class="stat-val" id="vHoje">0h00</div></div>
+    <div class="stat" id="statSaldoDia"><div class="stat-lbl" data-i18n="statBalanceDay">Saldo do dia</div><div class="stat-val" id="vSaldoDia">0h00</div></div>
+    <div class="stat" id="statBanco"><div class="stat-lbl" data-i18n="statBank">Banco de horas</div><div class="stat-val" id="vBanco">0h00</div></div>
+    <div class="stat" id="statMes"><div class="stat-lbl" data-i18n="statMonthExtra">Extra no mês</div><div class="stat-val" id="vMes">0h00</div></div>
+    <div class="stat"><div class="stat-lbl" data-i18n="statEarnedToday">Ganho hoje</div><div class="stat-val" id="vGanhoHoje">R$ 0,00</div></div>
   </div>
 
   <section class="block">
     <div class="block-head" id="settingsHead">
-      <h2>Rotina de trabalho</h2>
+      <h2 data-i18n="routineTitle">Rotina de trabalho</h2>
       <span class="chev" id="settingsChev">▾</span>
     </div>
     <div class="block-body" id="settingsBody">
-      <div class="field-row" style="margin-top:12px;"><label>Dias de trabalho</label></div>
+      <div class="field-row" style="margin-top:12px;"><label data-i18n="workDaysLabel">Dias de trabalho</label></div>
       <div class="days-row" id="daysRow"></div>
       <div class="field-row">
-        <label for="dailyHours">Jornada diária (horas)</label>
+        <label for="dailyHours" data-i18n="dailyHoursLabel">Jornada diária (horas)</label>
         <input type="number" id="dailyHours" min="0" step="0.5" value="8">
       </div>
       <div class="field-row">
-        <label for="hourlyRate">Valor da hora (R$)</label>
+        <label for="hourlyRate" data-i18n="hourlyRateLabel">Valor da hora (R$)</label>
         <input type="number" id="hourlyRate" min="0" step="0.01" value="0">
       </div>
-      <button class="save-settings" id="saveSettingsBtn">Salvar rotina</button>
+      <button class="save-settings" id="saveSettingsBtn" data-i18n="saveRoutine">Salvar rotina</button>
     </div>
   </section>
 
   <section class="block">
     <div class="history-head">
-      <h2>Histórico</h2>
-      <button class="add-day-btn" id="addDayBtn">+ Adicionar dia</button>
+      <h2 data-i18n="historyTitle">Histórico</h2>
+      <button class="add-day-btn" id="addDayBtn" data-i18n="addDay">+ Adicionar dia</button>
     </div>
     <div class="hist-list" id="histList"></div>
   </section>
 
   <section class="block">
     <div class="block-head" id="reportsHead">
-      <h2>Relatórios</h2>
+      <h2 data-i18n="reportsTitle">Relatórios</h2>
       <span class="chev" id="reportsChev">▾</span>
     </div>
     <div class="block-body" id="reportsBody">
       <div class="mode-toggle" style="margin-top:12px;">
-        <button id="repModeMonth" class="active">Por mês</button>
-        <button id="repModePeriod">Por período</button>
+        <button id="repModeMonth" class="active" data-i18n="byMonth">Por mês</button>
+        <button id="repModePeriod" data-i18n="byPeriod">Por período</button>
       </div>
       <div id="repMonthFields" class="field-row">
-        <label for="repMonth">Mês</label>
+        <label for="repMonth" data-i18n="monthLabel">Mês</label>
         <input type="month" id="repMonth">
       </div>
       <div id="repPeriodFields" class="modal-grid" style="display:none;">
-        <div><label>De</label><input type="date" id="repFrom"></div>
-        <div><label>Até</label><input type="date" id="repTo"></div>
+        <div><label data-i18n="fromLabel">De</label><input type="date" id="repFrom"></div>
+        <div><label data-i18n="toLabel">Até</label><input type="date" id="repTo"></div>
       </div>
-      <button class="save-settings" id="repSearchBtn">Buscar</button>
+      <button class="save-settings" id="repSearchBtn" data-i18n="searchBtn">Buscar</button>
 
       <div class="summary-bar" id="repSummary" style="margin-top:18px;">
-        <div class="stat"><div class="stat-lbl">Trabalhado</div><div class="stat-val" id="repTrabalhado">0h00</div></div>
-        <div class="stat"><div class="stat-lbl">Esperado</div><div class="stat-val" id="repEsperado">0h00</div></div>
-        <div class="stat" id="repStatSaldo"><div class="stat-lbl">Saldo</div><div class="stat-val" id="repSaldo">0h00</div></div>
-        <div class="stat"><div class="stat-lbl">Dias registrados</div><div class="stat-val" id="repDias">0</div></div>
-        <div class="stat"><div class="stat-lbl">Ganho no período</div><div class="stat-val" id="repGanho">R$ 0,00</div></div>
+        <div class="stat"><div class="stat-lbl" data-i18n="repWorked">Trabalhado</div><div class="stat-val" id="repTrabalhado">0h00</div></div>
+        <div class="stat"><div class="stat-lbl" data-i18n="repExpected">Esperado</div><div class="stat-val" id="repEsperado">0h00</div></div>
+        <div class="stat" id="repStatSaldo"><div class="stat-lbl" data-i18n="repBalance">Saldo</div><div class="stat-val" id="repSaldo">0h00</div></div>
+        <div class="stat"><div class="stat-lbl" data-i18n="repDaysLogged">Dias registrados</div><div class="stat-val" id="repDias">0</div></div>
+        <div class="stat"><div class="stat-lbl" data-i18n="repEarned">Ganho no período</div><div class="stat-val" id="repGanho">R$ 0,00</div></div>
       </div>
 
       <div class="hist-list" id="repList" style="margin-top:6px;"></div>
     </div>
   </section>
 
-  <div class="footer-note">Dados sincronizados na nuvem · <button id="resetBtn">apagar todos os dados</button></div>
+  <div class="footer-note"><span data-i18n="footerSynced">Dados sincronizados na nuvem</span> · <button id="resetBtn" data-i18n="deleteAllData">apagar todos os dados</button></div>
 
 </div>
 
 <div class="overlay" id="overlay">
   <div class="modal">
-    <h3 id="modalTitle">Adicionar dia</h3>
-    <div class="full-row"><label>Data</label><input type="date" id="modalDate"></div>
+    <h3 id="modalTitle" data-i18n="modalAddTitle">Adicionar dia</h3>
+    <div class="full-row"><label data-i18n="dateLabel">Data</label><input type="date" id="modalDate"></div>
     <div class="mode-toggle">
-      <button id="modeBatidas" class="active">Batidas</button>
-      <button id="modeManual">Total manual</button>
+      <button id="modeBatidas" class="active" data-i18n="modeBatidas">Batidas</button>
+      <button id="modeManual" data-i18n="modeManual">Total manual</button>
     </div>
     <div id="batidasFields" class="modal-grid">
-      <div><label>Entrada</label><input type="time" id="mEntrada"></div>
-      <div><label>Saída almoço</label><input type="time" id="mSaidaAlmoco"></div>
-      <div><label>Volta almoço</label><input type="time" id="mVoltaAlmoco"></div>
-      <div><label>Saída</label><input type="time" id="mSaida"></div>
+      <div><label data-i18n="fieldEntrada">Entrada</label><input type="time" id="mEntrada"></div>
+      <div><label data-i18n="fieldSaidaAlmoco">Saída almoço</label><input type="time" id="mSaidaAlmoco"></div>
+      <div><label data-i18n="fieldVoltaAlmoco">Volta almoço</label><input type="time" id="mVoltaAlmoco"></div>
+      <div><label data-i18n="fieldSaida">Saída</label><input type="time" id="mSaida"></div>
     </div>
     <div id="manualFields" class="full-row" style="display:none;">
-      <label>Total de horas trabalhadas</label>
-      <input type="number" id="mManual" min="0" step="0.25" placeholder="ex: 8.5">
+      <label data-i18n="totalWorkedLabel">Total de horas trabalhadas</label>
+      <input type="number" id="mManual" min="0" step="0.25" data-i18n-placeholder="exPlaceholder" placeholder="ex: 8.5">
     </div>
     <div class="modal-actions">
-      <button class="btn ghost" id="modalCancel">Cancelar</button>
-      <button class="btn primary" id="modalSave">Salvar</button>
+      <button class="btn ghost" id="modalCancel" data-i18n="cancelBtn">Cancelar</button>
+      <button class="btn primary" id="modalSave" data-i18n="saveBtn">Salvar</button>
     </div>
   </div>
 </div>
@@ -329,15 +334,152 @@
 <script>
 (function(){
   // ===== CONFIGURAÇÃO DO SUPABASE =====
-  // Troque pelos valores do SEU projeto (Supabase > Project Settings > API)
   const SUPABASE_URL = "https://rrzfqecyxqevmhxbjyyf.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_803klhobBDDr7teu0aHhpA_u612B9AE";
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   let currentUid = null;
 
-  const WEEKDAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  // ===== IDIOMAS =====
+  const SUPPORTED_LANGS = ['pt','en','es'];
+  const LOCALE_MAP = { pt:'pt-BR', en:'en-US', es:'es-ES' };
+  const WEEKDAYS_MAP = {
+    pt: ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],
+    en: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+    es: ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
+  };
+  const SLOT_LABELS_MAP = {
+    pt: { entrada:'Entrada', saidaAlmoco:'Saída alm.', voltaAlmoco:'Volta alm.', saida:'Saída' },
+    en: { entrada:'In', saidaAlmoco:'Lunch out', voltaAlmoco:'Lunch in', saida:'Out' },
+    es: { entrada:'Entrada', saidaAlmoco:'Salida alm.', voltaAlmoco:'Vuelta alm.', saida:'Salida' }
+  };
+  const PUNCH_ACTION_MAP = {
+    pt: { entrada:'Bater entrada', saidaAlmoco:'Bater saída almoço', voltaAlmoco:'Bater volta almoço', saida:'Bater saída' },
+    en: { entrada:'Clock in', saidaAlmoco:'Clock out (lunch)', voltaAlmoco:'Clock in (lunch)', saida:'Clock out' },
+    es: { entrada:'Fichar entrada', saidaAlmoco:'Fichar salida almuerzo', voltaAlmoco:'Fichar vuelta almuerzo', saida:'Fichar salida' }
+  };
+
+  const I18N = {
+    pt: {
+      eyebrow:'Registro de jornada', appTitle:'Cartão de Ponto', logout:'Sair', today:'Hoje',
+      punchDefault:'Bater ponto', todayLabelPrefix:'Hoje:', dayComplete:'Dia completo', dayManual:'Dia com total manual',
+      statWorkedToday:'Trabalhado hoje', statBalanceDay:'Saldo do dia', statBank:'Banco de horas', statMonthExtra:'Extra no mês', statEarnedToday:'Ganho hoje',
+      routineTitle:'Rotina de trabalho', workDaysLabel:'Dias de trabalho', dailyHoursLabel:'Jornada diária (horas)', hourlyRateLabel:'Valor da hora (R$)', saveRoutine:'Salvar rotina',
+      historyTitle:'Histórico', addDay:'+ Adicionar dia', emptyHistory:'Nenhum dia registrado ainda. Bata o ponto ou adicione um dia manualmente.',
+      manualTotalPrefix:'Total manual:', editDay:'Editar dia', deleteDay:'Excluir dia',
+      reportsTitle:'Relatórios', byMonth:'Por mês', byPeriod:'Por período', monthLabel:'Mês', fromLabel:'De', toLabel:'Até', searchBtn:'Buscar',
+      repWorked:'Trabalhado', repExpected:'Esperado', repBalance:'Saldo', repDaysLogged:'Dias registrados', repEarned:'Ganho no período', emptyReport:'Nenhum dia registrado nesse intervalo.',
+      footerSynced:'Dados sincronizados na nuvem', deleteAllData:'apagar todos os dados', confirmDeleteAll:'Isso vai apagar todos os pontos e a rotina salva na sua conta. Continuar?',
+      modalAddTitle:'Adicionar dia', modalEditTitle:'Editar dia', dateLabel:'Data', modeBatidas:'Batidas', modeManual:'Total manual',
+      fieldEntrada:'Entrada', fieldSaidaAlmoco:'Saída almoço', fieldVoltaAlmoco:'Volta almoço', fieldSaida:'Saída',
+      totalWorkedLabel:'Total de horas trabalhadas', cancelBtn:'Cancelar', saveBtn:'Salvar', alertEndBeforeStart:'A data final precisa ser depois da data inicial.',
+      loading:'Carregando…', authTabLogin:'Entrar', authTabSignup:'Criar conta', emailLabel:'E-mail', passwordLabel:'Senha', forgotPassword:'Esqueci minha senha',
+      fillEmailPassword:'Preencha e-mail e senha.', enterEmailForReset:'Digite seu e-mail acima para recuperar a senha.', resetEmailSent:'E-mail de recuperação enviado.',
+      accountCreated:'Conta criada! Se a confirmação por e-mail estiver ativa no seu projeto, confira sua caixa de entrada antes de entrar.',
+      errInvalidCredentials:'E-mail ou senha incorretos.', errAlreadyRegistered:'Esse e-mail já está cadastrado.', errWeakPassword:'A senha precisa ter pelo menos 6 caracteres.',
+      errInvalidEmail:'E-mail inválido.', errEmailNotConfirmed:'Confirme seu e-mail (verifique sua caixa de entrada) antes de entrar.',
+      errRateLimit:'Muitas tentativas. Tente novamente mais tarde.', errNetwork:'Falha de conexão. Confira sua internet.', errGeneric:'Ocorreu um erro. Tente novamente.',
+      loadFailAlert:'Não foi possível carregar seus dados. Confira sua conexão com a internet.', saveFailAlert:'Não foi possível salvar. Confira sua conexão com a internet.',
+      exPlaceholder:'ex: 8.5'
+    },
+    en: {
+      eyebrow:'Work log', appTitle:'Time Card', logout:'Log out', today:'Today',
+      punchDefault:'Clock in/out', todayLabelPrefix:'Today:', dayComplete:'Day complete', dayManual:'Manual total for the day',
+      statWorkedToday:'Worked today', statBalanceDay:'Balance today', statBank:'Hours bank', statMonthExtra:'Extra this month', statEarnedToday:'Earned today',
+      routineTitle:'Work routine', workDaysLabel:'Work days', dailyHoursLabel:'Daily hours', hourlyRateLabel:'Hourly rate (R$)', saveRoutine:'Save routine',
+      historyTitle:'History', addDay:'+ Add day', emptyHistory:'No days logged yet. Clock in or add a day manually.',
+      manualTotalPrefix:'Manual total:', editDay:'Edit day', deleteDay:'Delete day',
+      reportsTitle:'Reports', byMonth:'By month', byPeriod:'By period', monthLabel:'Month', fromLabel:'From', toLabel:'To', searchBtn:'Search',
+      repWorked:'Worked', repExpected:'Expected', repBalance:'Balance', repDaysLogged:'Days logged', repEarned:'Earned in period', emptyReport:'No days logged in this range.',
+      footerSynced:'Data synced to the cloud', deleteAllData:'delete all data', confirmDeleteAll:'This will delete all punches and your saved routine. Continue?',
+      modalAddTitle:'Add day', modalEditTitle:'Edit day', dateLabel:'Date', modeBatidas:'Punches', modeManual:'Manual total',
+      fieldEntrada:'Clock in', fieldSaidaAlmoco:'Lunch out', fieldVoltaAlmoco:'Lunch in', fieldSaida:'Clock out',
+      totalWorkedLabel:'Total hours worked', cancelBtn:'Cancel', saveBtn:'Save', alertEndBeforeStart:'The end date must be after the start date.',
+      loading:'Loading…', authTabLogin:'Log in', authTabSignup:'Sign up', emailLabel:'Email', passwordLabel:'Password', forgotPassword:'Forgot my password',
+      fillEmailPassword:'Fill in email and password.', enterEmailForReset:'Enter your email above to reset your password.', resetEmailSent:'Password reset email sent.',
+      accountCreated:'Account created! If email confirmation is enabled on your project, check your inbox before logging in.',
+      errInvalidCredentials:'Incorrect email or password.', errAlreadyRegistered:'This email is already registered.', errWeakPassword:'Password must be at least 6 characters.',
+      errInvalidEmail:'Invalid email.', errEmailNotConfirmed:'Confirm your email (check your inbox) before logging in.',
+      errRateLimit:'Too many attempts. Try again later.', errNetwork:'Connection failed. Check your internet.', errGeneric:'An error occurred. Try again.',
+      loadFailAlert:'Could not load your data. Check your internet connection.', saveFailAlert:'Could not save. Check your internet connection.',
+      exPlaceholder:'e.g. 8.5'
+    },
+    es: {
+      eyebrow:'Registro laboral', appTitle:'Tarjeta de Horario', logout:'Salir', today:'Hoy',
+      punchDefault:'Fichar', todayLabelPrefix:'Hoy:', dayComplete:'Día completo', dayManual:'Total manual del día',
+      statWorkedToday:'Trabajado hoy', statBalanceDay:'Saldo del día', statBank:'Banco de horas', statMonthExtra:'Extra este mes', statEarnedToday:'Ganado hoy',
+      routineTitle:'Rutina de trabajo', workDaysLabel:'Días laborables', dailyHoursLabel:'Jornada diaria (horas)', hourlyRateLabel:'Valor por hora (R$)', saveRoutine:'Guardar rutina',
+      historyTitle:'Historial', addDay:'+ Añadir día', emptyHistory:'Aún no hay días registrados. Ficha o añade un día manualmente.',
+      manualTotalPrefix:'Total manual:', editDay:'Editar día', deleteDay:'Eliminar día',
+      reportsTitle:'Informes', byMonth:'Por mes', byPeriod:'Por período', monthLabel:'Mes', fromLabel:'Desde', toLabel:'Hasta', searchBtn:'Buscar',
+      repWorked:'Trabajado', repExpected:'Esperado', repBalance:'Saldo', repDaysLogged:'Días registrados', repEarned:'Ganado en el período', emptyReport:'No hay días registrados en este intervalo.',
+      footerSynced:'Datos sincronizados en la nube', deleteAllData:'borrar todos los datos', confirmDeleteAll:'Esto borrará todos los registros y la rutina guardada en tu cuenta. ¿Continuar?',
+      modalAddTitle:'Añadir día', modalEditTitle:'Editar día', dateLabel:'Fecha', modeBatidas:'Fichajes', modeManual:'Total manual',
+      fieldEntrada:'Entrada', fieldSaidaAlmoco:'Salida almuerzo', fieldVoltaAlmoco:'Vuelta almuerzo', fieldSaida:'Salida',
+      totalWorkedLabel:'Total de horas trabajadas', cancelBtn:'Cancelar', saveBtn:'Guardar', alertEndBeforeStart:'La fecha final debe ser posterior a la inicial.',
+      loading:'Cargando…', authTabLogin:'Entrar', authTabSignup:'Crear cuenta', emailLabel:'Correo electrónico', passwordLabel:'Contraseña', forgotPassword:'Olvidé mi contraseña',
+      fillEmailPassword:'Completa correo y contraseña.', enterEmailForReset:'Escribe tu correo arriba para recuperar la contraseña.', resetEmailSent:'Correo de recuperación enviado.',
+      accountCreated:'¡Cuenta creada! Si la confirmación por correo está activa en tu proyecto, revisa tu bandeja de entrada antes de iniciar sesión.',
+      errInvalidCredentials:'Correo o contraseña incorrectos.', errAlreadyRegistered:'Este correo ya está registrado.', errWeakPassword:'La contraseña debe tener al menos 6 caracteres.',
+      errInvalidEmail:'Correo inválido.', errEmailNotConfirmed:'Confirma tu correo (revisa tu bandeja de entrada) antes de iniciar sesión.',
+      errRateLimit:'Demasiados intentos. Inténtalo más tarde.', errNetwork:'Fallo de conexión. Revisa tu internet.', errGeneric:'Ocurrió un error. Inténtalo de nuevo.',
+      loadFailAlert:'No se pudieron cargar tus datos. Revisa tu conexión a internet.', saveFailAlert:'No se pudo guardar. Revisa tu conexión a internet.',
+      exPlaceholder:'ej: 8.5'
+    }
+  };
+
+  function detectLang(){
+    const stored = localStorage.getItem('ponto-lang');
+    if(stored && SUPPORTED_LANGS.includes(stored)) return stored;
+    const navLangs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'pt'];
+    for(const raw of navLangs){
+      const short = (raw||'').slice(0,2).toLowerCase();
+      if(SUPPORTED_LANGS.includes(short)) return short;
+    }
+    return 'pt';
+  }
+  let currentLang = detectLang();
+  function t(key){ return (I18N[currentLang] && I18N[currentLang][key]) || I18N.pt[key] || key; }
+
+  function applyI18n(){
+    document.documentElement.lang = LOCALE_MAP[currentLang];
+    document.querySelectorAll('[data-i18n]').forEach(el=>{
+      el.textContent = t(el.getAttribute('data-i18n'));
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+      el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+    });
+    renderLangSwitches();
+  }
+
+  function renderLangSwitches(){
+    [document.getElementById('appLangSwitch'), document.getElementById('authLangSwitch')].forEach(container=>{
+      if(!container) return;
+      container.innerHTML = '';
+      SUPPORTED_LANGS.forEach(lang=>{
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = lang.toUpperCase();
+        btn.className = lang===currentLang ? 'active' : '';
+        btn.addEventListener('click', ()=> setLang(lang));
+        container.appendChild(btn);
+      });
+    });
+  }
+
+  function setLang(lang){
+    if(!SUPPORTED_LANGS.includes(lang)) return;
+    currentLang = lang;
+    localStorage.setItem('ponto-lang', lang);
+    applyI18n();
+    if(document.getElementById('appRoot').style.display !== 'none'){
+      renderAll();
+      runReport();
+    }
+  }
+
+  function WEEKDAYS(){ return WEEKDAYS_MAP[currentLang]; }
+  function SLOT_LABEL(k){ return SLOT_LABELS_MAP[currentLang][k]; }
   const SLOT_KEYS = ['entrada','saidaAlmoco','voltaAlmoco','saida'];
-  const SLOT_LABELS = {entrada:'Entrada', saidaAlmoco:'Saída alm.', voltaAlmoco:'Volta alm.', saida:'Saída'};
 
   function defaultState(){ return { settings:{ dailyHours:8, workDays:[1,2,3,4,5], hourlyRate:0 }, entries:{} }; }
   let state = defaultState();
@@ -358,7 +500,7 @@
     return (mins/60) * rate;
   }
   function formatCurrency(val){
-    return 'R$ ' + (val||0).toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+    return 'R$ ' + (val||0).toLocaleString(LOCALE_MAP[currentLang], { minimumFractionDigits:2, maximumFractionDigits:2 });
   }
 
   function getEntry(key){
@@ -403,7 +545,7 @@
       }
     }catch(e){
       console.error('Falha ao carregar dados da nuvem', e);
-      alert('Não foi possível carregar seus dados. Confira sua conexão com a internet.');
+      alert(t('loadFailAlert'));
     }
     renderAll();
   }
@@ -419,20 +561,20 @@
       if(error) throw error;
     }catch(e){
       console.error('Falha ao salvar dados na nuvem', e);
-      alert('Não foi possível salvar. Confira sua conexão com a internet.');
+      alert(t('saveFailAlert'));
     }
   }
 
   function tickClock(){
     const d = new Date();
     document.getElementById('liveClock').textContent = pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
-    document.getElementById('liveDate').textContent = d.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' });
+    document.getElementById('liveDate').textContent = d.toLocaleDateString(LOCALE_MAP[currentLang], { weekday:'long', day:'2-digit', month:'long' });
   }
 
   function renderPunchCard(justStampedKey){
     const key = todayKey();
     const entry = getEntry(key);
-    document.getElementById('pcDayLabel').textContent = WEEKDAYS[new Date().getDay()] + ' · ' + pad(new Date().getDate())+'/'+pad(new Date().getMonth()+1);
+    document.getElementById('pcDayLabel').textContent = WEEKDAYS()[new Date().getDay()] + ' · ' + pad(new Date().getDate())+'/'+pad(new Date().getMonth()+1);
     const slotsEl = document.getElementById('pcSlots');
     slotsEl.innerHTML = '';
     SLOT_KEYS.forEach(k=>{
@@ -440,7 +582,7 @@
       const div = document.createElement('div');
       div.className = 'pc-slot' + (k===justStampedKey ? ' stamped':'');
       div.tabIndex = 0;
-      div.innerHTML = `<div class="lbl">${SLOT_LABELS[k]}</div><div class="val ${val?'filled':'empty'}">${val || '--:--'}</div>`;
+      div.innerHTML = `<div class="lbl">${SLOT_LABEL(k)}</div><div class="val ${val?'filled':'empty'}">${val || '--:--'}</div>`;
       div.addEventListener('click', ()=> editSlot(key, k, div));
       div.addEventListener('keydown', (ev)=>{ if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); editSlot(key,k,div); } });
       slotsEl.appendChild(div);
@@ -450,9 +592,9 @@
     const nextEmpty = SLOT_KEYS.find(k=>!entry[k]);
     const btn = document.getElementById('punchBtn');
     const lbl = document.getElementById('punchBtnLbl');
-    if(entry.manualMinutes != null){ btn.disabled = true; lbl.textContent = 'Dia com total manual'; }
-    else if(!nextEmpty){ btn.disabled = true; lbl.textContent = 'Dia completo'; }
-    else { btn.disabled = false; lbl.textContent = 'Bater ' + SLOT_LABELS[nextEmpty].toLowerCase(); }
+    if(entry.manualMinutes != null){ btn.disabled = true; lbl.textContent = t('dayManual'); }
+    else if(!nextEmpty){ btn.disabled = true; lbl.textContent = t('dayComplete'); }
+    else { btn.disabled = false; lbl.textContent = PUNCH_ACTION_MAP[currentLang][nextEmpty]; }
   }
 
   function editSlot(key, slotKey, el){
@@ -523,7 +665,7 @@
   function renderSettings(){
     const row = document.getElementById('daysRow');
     row.innerHTML = '';
-    WEEKDAYS.forEach((label, idx)=>{
+    WEEKDAYS().forEach((label, idx)=>{
       const chip = document.createElement('button');
       chip.type = 'button';
       chip.className = 'day-chip' + (state.settings.workDays.includes(idx) ? ' active':'');
@@ -543,7 +685,7 @@
     const listEl = document.getElementById('histList');
     const keys = Object.keys(state.entries).filter(k=>hasAnyData(state.entries[k])).sort().reverse();
     if(keys.length===0){
-      listEl.innerHTML = '<div class="empty-hist">Nenhum dia registrado ainda. Bata o ponto ou adicione um dia manualmente.</div>';
+      listEl.innerHTML = '<div class="empty-hist">'+t('emptyHistory')+'</div>';
       return;
     }
     listEl.innerHTML = '';
@@ -553,12 +695,12 @@
       const worked = workedMinutes(entry);
       const saldo = saldoMinutes(key, entry);
       const saldoClass = saldo>0?'pos':(saldo<0?'neg':'zero');
-      const timesStr = entry.manualMinutes!=null ? 'Total manual: ' + minutesToLabel(entry.manualMinutes) : SLOT_KEYS.map(k=>entry[k]||'--:--').join(' · ');
+      const timesStr = entry.manualMinutes!=null ? t('manualTotalPrefix')+' '+minutesToLabel(entry.manualMinutes) : SLOT_KEYS.map(k=>entry[k]||'--:--').join(' · ');
       const row = document.createElement('div');
       row.className = 'hist-row';
       row.innerHTML = `
         <div class="hist-left">
-          <div class="hist-date"><span class="wd">${WEEKDAYS[d.getDay()]}</span><span class="dm">${pad(d.getDate())}/${pad(d.getMonth()+1)}</span></div>
+          <div class="hist-date"><span class="wd">${WEEKDAYS()[d.getDay()]}</span><span class="dm">${pad(d.getDate())}/${pad(d.getMonth()+1)}</span></div>
           <div class="hist-times">${timesStr}</div>
         </div>
         <div class="hist-right">
@@ -566,8 +708,8 @@
           <div class="hist-earn">${formatCurrency(earningsForMinutes(worked))}</div>
           <div class="hist-saldo ${saldoClass}">${saldo>=0?'+':''}${minutesToLabel(saldo)}</div>
           <div class="hist-actions">
-            <button class="icon-btn" data-edit="${key}" aria-label="Editar dia">✎</button>
-            <button class="icon-btn" data-del="${key}" aria-label="Excluir dia">✕</button>
+            <button class="icon-btn" data-edit="${key}" aria-label="${t('editDay')}">✎</button>
+            <button class="icon-btn" data-del="${key}" aria-label="${t('deleteDay')}">✕</button>
           </div>
         </div>`;
       listEl.appendChild(row);
@@ -583,7 +725,7 @@
 
   function openModal(key){
     editingDate = key || todayKey();
-    document.getElementById('modalTitle').textContent = key ? 'Editar dia' : 'Adicionar dia';
+    document.getElementById('modalTitle').textContent = key ? t('modalEditTitle') : t('modalAddTitle');
     document.getElementById('modalDate').value = editingDate;
     const entry = getEntry(editingDate);
     const isManual = entry.manualMinutes != null;
@@ -656,7 +798,7 @@
     const start = dateKeyToDate(startKey);
     const end = dateKeyToDate(endKey);
     if(end < start){
-      alert('A data final precisa ser depois da data inicial.');
+      alert(t('alertEndBeforeStart'));
       return;
     }
 
@@ -688,7 +830,7 @@
 
     const listEl = document.getElementById('repList');
     if(rows.length === 0){
-      listEl.innerHTML = '<div class="empty-hist">Nenhum dia registrado nesse intervalo.</div>';
+      listEl.innerHTML = '<div class="empty-hist">'+t('emptyReport')+'</div>';
       return;
     }
     listEl.innerHTML = '';
@@ -698,12 +840,12 @@
       const worked = workedMinutes(entry);
       const saldo = saldoMinutes(key, entry);
       const saldoClass = saldo>0?'pos':(saldo<0?'neg':'zero');
-      const timesStr = entry.manualMinutes!=null ? 'Total manual: ' + minutesToLabel(entry.manualMinutes) : SLOT_KEYS.map(k=>entry[k]||'--:--').join(' · ');
+      const timesStr = entry.manualMinutes!=null ? t('manualTotalPrefix')+' '+minutesToLabel(entry.manualMinutes) : SLOT_KEYS.map(k=>entry[k]||'--:--').join(' · ');
       const row = document.createElement('div');
       row.className = 'hist-row';
       row.innerHTML = `
         <div class="hist-left">
-          <div class="hist-date"><span class="wd">${WEEKDAYS[d.getDay()]}</span><span class="dm">${pad(d.getDate())}/${pad(d.getMonth()+1)}</span></div>
+          <div class="hist-date"><span class="wd">${WEEKDAYS()[d.getDay()]}</span><span class="dm">${pad(d.getDate())}/${pad(d.getMonth()+1)}</span></div>
           <div class="hist-times">${timesStr}</div>
         </div>
         <div class="hist-right">
@@ -748,7 +890,7 @@
     runReport();
   });
   document.getElementById('resetBtn').addEventListener('click', async ()=>{
-    if(confirm('Isso vai apagar todos os pontos e a rotina salva na sua conta. Continuar?')){
+    if(confirm(t('confirmDeleteAll'))){
       state = defaultState();
       await saveData();
       renderAll();
@@ -759,14 +901,14 @@
   // ---------- autenticação (login / cadastro / recuperação de senha) ----------
   function traduzErroAuth(message){
     const m = (message||'').toLowerCase();
-    if(m.includes('invalid login credentials')) return 'E-mail ou senha incorretos.';
-    if(m.includes('user already registered')) return 'Esse e-mail já está cadastrado.';
-    if(m.includes('password should be at least')) return 'A senha precisa ter pelo menos 6 caracteres.';
-    if(m.includes('unable to validate email') || m.includes('invalid email')) return 'E-mail inválido.';
-    if(m.includes('email not confirmed')) return 'Confirme seu e-mail (verifique sua caixa de entrada) antes de entrar.';
-    if(m.includes('rate limit') || m.includes('too many')) return 'Muitas tentativas. Tente novamente mais tarde.';
-    if(m.includes('failed to fetch') || m.includes('network')) return 'Falha de conexão. Confira sua internet.';
-    return message || 'Ocorreu um erro. Tente novamente.';
+    if(m.includes('invalid login credentials')) return t('errInvalidCredentials');
+    if(m.includes('user already registered')) return t('errAlreadyRegistered');
+    if(m.includes('password should be at least')) return t('errWeakPassword');
+    if(m.includes('unable to validate email') || m.includes('invalid email')) return t('errInvalidEmail');
+    if(m.includes('email not confirmed')) return t('errEmailNotConfirmed');
+    if(m.includes('rate limit') || m.includes('too many')) return t('errRateLimit');
+    if(m.includes('failed to fetch') || m.includes('network')) return t('errNetwork');
+    return message || t('errGeneric');
   }
 
   function setupAuthUI(){
@@ -780,7 +922,7 @@
       mode = m;
       tabLogin.classList.toggle('active', m==='login');
       tabSignup.classList.toggle('active', m==='signup');
-      submitBtn.textContent = m==='login' ? 'Entrar' : 'Criar conta';
+      submitBtn.textContent = m==='login' ? t('authTabLogin') : t('authTabSignup');
       errorEl.textContent = '';
       errorEl.style.color = 'var(--coral)';
     }
@@ -793,7 +935,7 @@
       errorEl.style.color = 'var(--coral)';
       const email = document.getElementById('authEmail').value.trim();
       const senha = document.getElementById('authSenha').value;
-      if(!email || !senha){ errorEl.textContent = 'Preencha e-mail e senha.'; return; }
+      if(!email || !senha){ errorEl.textContent = t('fillEmailPassword'); return; }
       submitBtn.disabled = true;
       try{
         if(mode==='login'){
@@ -803,7 +945,7 @@
           const { error } = await supabaseClient.auth.signUp({ email, password: senha });
           if(error) throw error;
           errorEl.style.color = 'var(--teal)';
-          errorEl.textContent = 'Conta criada! Se a confirmação por e-mail estiver ativa no seu projeto, confira sua caixa de entrada antes de entrar.';
+          errorEl.textContent = t('accountCreated');
         }
       }catch(err){
         errorEl.textContent = traduzErroAuth(err.message);
@@ -813,12 +955,12 @@
 
     document.getElementById('forgotBtn').addEventListener('click', async ()=>{
       const email = document.getElementById('authEmail').value.trim();
-      if(!email){ errorEl.textContent = 'Digite seu e-mail acima para recuperar a senha.'; errorEl.style.color = 'var(--coral)'; return; }
+      if(!email){ errorEl.textContent = t('enterEmailForReset'); errorEl.style.color = 'var(--coral)'; return; }
       try{
         const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
         if(error) throw error;
         errorEl.style.color = 'var(--teal)';
-        errorEl.textContent = 'E-mail de recuperação enviado.';
+        errorEl.textContent = t('resetEmailSent');
       }catch(err){
         errorEl.style.color = 'var(--coral)';
         errorEl.textContent = traduzErroAuth(err.message);
@@ -830,6 +972,7 @@
     });
   }
 
+  applyI18n();
   tickClock();
   setInterval(tickClock, 1000);
   initReports();
