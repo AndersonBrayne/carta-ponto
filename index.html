@@ -14,6 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="Ponto">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root{
     --bg:#14181F;
@@ -137,10 +138,73 @@
 
   .footer-note{text-align:center;font-size:11px;color:var(--text-muted);margin-top:18px;}
   .footer-note button{background:none;border:none;color:var(--coral);text-decoration:underline;cursor:pointer;font-size:11px;padding:0;}
+
+  /* ---------- login / cadastro ---------- */
+  .loading-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:13px;}
+  .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;max-width:360px;width:100%;box-shadow:0 20px 40px -20px rgba(0,0,0,.6);}
+  .auth-brand{text-align:center;margin-bottom:22px;}
+  .auth-brand .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:4px;}
+  .auth-brand .title{font-size:20px;font-weight:800;}
+  .auth-tabs{display:flex;gap:6px;margin-bottom:18px;}
+  .auth-tabs button{flex:1;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-muted);font-weight:600;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;}
+  .auth-tabs button.active{background:var(--amber);color:#1B222C;border-color:var(--amber);}
+  .auth-field{margin-bottom:12px;}
+  .auth-field label{font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;}
+  .auth-field input{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 11px;font-size:14px;font-family:'Inter',sans-serif;}
+  .auth-field input:focus-visible{outline:2px solid var(--amber);outline-offset:1px;}
+  .auth-submit{width:100%;background:var(--amber);color:#1B222C;border:none;border-radius:8px;padding:11px;font-weight:700;font-size:14px;cursor:pointer;margin-top:6px;font-family:'Inter',sans-serif;}
+  .auth-submit:disabled{opacity:.6;cursor:default;}
+  .auth-error{min-height:16px;color:var(--coral);font-size:12.5px;margin-top:10px;text-align:center;}
+  .auth-forgot{text-align:center;margin-top:14px;}
+  .auth-forgot button{background:none;border:none;color:var(--text-muted);font-size:12px;text-decoration:underline;cursor:pointer;font-family:'Inter',sans-serif;}
+  .user-bar{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:0 4px 10px;}
+  .user-email{font-size:11.5px;color:var(--text-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .logout-btn{background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+  .logout-btn:hover{border-color:var(--amber-dim);}
 </style>
 </head>
 <body>
-<div class="app">
+
+<div class="loading-screen" id="loadingScreen">Carregando…</div>
+
+<div class="auth-screen" id="authScreen" style="display:none;">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="eyebrow">Registro de jornada</div>
+        <div class="title">Cartão de Ponto</div>
+      </div>
+      <div class="auth-tabs">
+        <button type="button" id="authTabLogin" class="active">Entrar</button>
+        <button type="button" id="authTabSignup">Criar conta</button>
+      </div>
+      <form id="authForm">
+        <div class="auth-field">
+          <label for="authEmail">E-mail</label>
+          <input type="email" id="authEmail" autocomplete="email" required>
+        </div>
+        <div class="auth-field">
+          <label for="authSenha">Senha</label>
+          <input type="password" id="authSenha" autocomplete="current-password" required minlength="6">
+        </div>
+        <button type="submit" class="auth-submit" id="authSubmitBtn">Entrar</button>
+        <div class="auth-error" id="authError"></div>
+      </form>
+      <div class="auth-forgot">
+        <button type="button" id="forgotBtn">Esqueci minha senha</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="appRoot" style="display:none;">
+
+  <div class="user-bar">
+    <span class="user-email" id="userEmail"></span>
+    <button class="logout-btn" id="logoutBtn">Sair</button>
+  </div>
+
 
   <header>
     <div class="brand">
@@ -233,7 +297,7 @@
     </div>
   </section>
 
-  <div class="footer-note">Dados salvos neste aparelho · <button id="resetBtn">apagar todos os dados</button></div>
+  <div class="footer-note">Dados sincronizados na nuvem · <button id="resetBtn">apagar todos os dados</button></div>
 
 </div>
 
@@ -264,12 +328,19 @@
 
 <script>
 (function(){
-  const STORAGE_KEY = 'ponto-data-v1';
+  // ===== CONFIGURAÇÃO DO SUPABASE =====
+  // Troque pelos valores do SEU projeto (Supabase > Project Settings > API)
+  const SUPABASE_URL = "https://rrzfqecyxqevmhxbjyyf.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_803klhobBDDr7teu0aHhpA_u612B9AE";
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  let currentUid = null;
+
   const WEEKDAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   const SLOT_KEYS = ['entrada','saidaAlmoco','voltaAlmoco','saida'];
   const SLOT_LABELS = {entrada:'Entrada', saidaAlmoco:'Saída alm.', voltaAlmoco:'Volta alm.', saida:'Saída'};
 
-  let state = { settings:{ dailyHours:8, workDays:[1,2,3,4,5], hourlyRate:0 }, entries:{} };
+  function defaultState(){ return { settings:{ dailyHours:8, workDays:[1,2,3,4,5], hourlyRate:0 }, entries:{} }; }
+  let state = defaultState();
   let editingDate = null;
 
   function pad(n){ return String(n).padStart(2,'0'); }
@@ -314,21 +385,42 @@
     return entry.manualMinutes != null || SLOT_KEYS.some(k=>entry[k]);
   }
 
-  // ---------- storage (localStorage = banco de dados local do aparelho) ----------
-  function loadData(){
+  // ---------- armazenamento (tabela ponto_dados no Supabase/Postgres) ----------
+  async function loadData(){
     try{
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if(raw){
-        const parsed = JSON.parse(raw);
-        state.settings = Object.assign(state.settings, parsed.settings||{});
-        state.entries = parsed.entries || {};
+      const { data, error } = await supabaseClient
+        .from('ponto_dados')
+        .select('settings, entries')
+        .eq('user_id', currentUid)
+        .maybeSingle();
+      if(error) throw error;
+      if(data){
+        state.settings = Object.assign(defaultState().settings, data.settings||{});
+        state.entries = data.entries || {};
+      } else {
+        state = defaultState();
+        await saveData();
       }
-    }catch(e){ console.error('Falha ao carregar dados', e); }
+    }catch(e){
+      console.error('Falha ao carregar dados da nuvem', e);
+      alert('Não foi possível carregar seus dados. Confira sua conexão com a internet.');
+    }
     renderAll();
   }
-  function saveData(){
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-    catch(e){ console.error('Falha ao salvar dados', e); alert('Não foi possível salvar os dados neste aparelho.'); }
+  async function saveData(){
+    if(!currentUid) return;
+    try{
+      const { error } = await supabaseClient.from('ponto_dados').upsert({
+        user_id: currentUid,
+        settings: state.settings,
+        entries: state.entries,
+        updated_at: new Date().toISOString()
+      });
+      if(error) throw error;
+    }catch(e){
+      console.error('Falha ao salvar dados na nuvem', e);
+      alert('Não foi possível salvar. Confira sua conexão com a internet.');
+    }
   }
 
   function tickClock(){
@@ -655,25 +747,117 @@
     renderAll();
     runReport();
   });
-  document.getElementById('resetBtn').addEventListener('click', ()=>{
-    if(confirm('Isso vai apagar todos os pontos e a rotina salva neste aparelho. Continuar?')){
-      localStorage.removeItem(STORAGE_KEY);
-      state = { settings:{ dailyHours:8, workDays:[1,2,3,4,5] }, entries:{} };
+  document.getElementById('resetBtn').addEventListener('click', async ()=>{
+    if(confirm('Isso vai apagar todos os pontos e a rotina salva na sua conta. Continuar?')){
+      state = defaultState();
+      await saveData();
       renderAll();
+      runReport();
     }
   });
 
+  // ---------- autenticação (login / cadastro / recuperação de senha) ----------
+  function traduzErroAuth(message){
+    const m = (message||'').toLowerCase();
+    if(m.includes('invalid login credentials')) return 'E-mail ou senha incorretos.';
+    if(m.includes('user already registered')) return 'Esse e-mail já está cadastrado.';
+    if(m.includes('password should be at least')) return 'A senha precisa ter pelo menos 6 caracteres.';
+    if(m.includes('unable to validate email') || m.includes('invalid email')) return 'E-mail inválido.';
+    if(m.includes('email not confirmed')) return 'Confirme seu e-mail (verifique sua caixa de entrada) antes de entrar.';
+    if(m.includes('rate limit') || m.includes('too many')) return 'Muitas tentativas. Tente novamente mais tarde.';
+    if(m.includes('failed to fetch') || m.includes('network')) return 'Falha de conexão. Confira sua internet.';
+    return message || 'Ocorreu um erro. Tente novamente.';
+  }
+
+  function setupAuthUI(){
+    let mode = 'login';
+    const tabLogin = document.getElementById('authTabLogin');
+    const tabSignup = document.getElementById('authTabSignup');
+    const submitBtn = document.getElementById('authSubmitBtn');
+    const errorEl = document.getElementById('authError');
+
+    function setMode(m){
+      mode = m;
+      tabLogin.classList.toggle('active', m==='login');
+      tabSignup.classList.toggle('active', m==='signup');
+      submitBtn.textContent = m==='login' ? 'Entrar' : 'Criar conta';
+      errorEl.textContent = '';
+      errorEl.style.color = 'var(--coral)';
+    }
+    tabLogin.addEventListener('click', ()=>setMode('login'));
+    tabSignup.addEventListener('click', ()=>setMode('signup'));
+
+    document.getElementById('authForm').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      errorEl.textContent = '';
+      errorEl.style.color = 'var(--coral)';
+      const email = document.getElementById('authEmail').value.trim();
+      const senha = document.getElementById('authSenha').value;
+      if(!email || !senha){ errorEl.textContent = 'Preencha e-mail e senha.'; return; }
+      submitBtn.disabled = true;
+      try{
+        if(mode==='login'){
+          const { error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
+          if(error) throw error;
+        } else {
+          const { error } = await supabaseClient.auth.signUp({ email, password: senha });
+          if(error) throw error;
+          errorEl.style.color = 'var(--teal)';
+          errorEl.textContent = 'Conta criada! Se a confirmação por e-mail estiver ativa no seu projeto, confira sua caixa de entrada antes de entrar.';
+        }
+      }catch(err){
+        errorEl.textContent = traduzErroAuth(err.message);
+      }
+      submitBtn.disabled = false;
+    });
+
+    document.getElementById('forgotBtn').addEventListener('click', async ()=>{
+      const email = document.getElementById('authEmail').value.trim();
+      if(!email){ errorEl.textContent = 'Digite seu e-mail acima para recuperar a senha.'; errorEl.style.color = 'var(--coral)'; return; }
+      try{
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+        if(error) throw error;
+        errorEl.style.color = 'var(--teal)';
+        errorEl.textContent = 'E-mail de recuperação enviado.';
+      }catch(err){
+        errorEl.style.color = 'var(--coral)';
+        errorEl.textContent = traduzErroAuth(err.message);
+      }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', ()=>{
+      supabaseClient.auth.signOut();
+    });
+  }
+
   tickClock();
   setInterval(tickClock, 1000);
-  loadData();
   initReports();
-  runReport();
+  setupAuthUI();
 
   if('serviceWorker' in navigator){
     window.addEventListener('load', ()=>{
       navigator.serviceWorker.register('service-worker.js').catch(()=>{});
     });
   }
+
+  supabaseClient.auth.onAuthStateChange(async (event, session)=>{
+    document.getElementById('loadingScreen').style.display = 'none';
+    const user = session && session.user;
+    if(user){
+      currentUid = user.id;
+      document.getElementById('authScreen').style.display = 'none';
+      document.getElementById('appRoot').style.display = 'block';
+      document.getElementById('userEmail').textContent = user.email || '';
+      await loadData();
+      runReport();
+    } else {
+      currentUid = null;
+      state = defaultState();
+      document.getElementById('authScreen').style.display = 'flex';
+      document.getElementById('appRoot').style.display = 'none';
+    }
+  });
 })();
 </script>
 </body>
