@@ -15,6 +15,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
     --bg:#14181F;
@@ -166,6 +170,35 @@
   .lang-switch button{background:var(--surface-2);border:1px solid var(--border);color:var(--text-muted);border-radius:6px;padding:4px 7px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.03em;}
   .lang-switch button.active{background:var(--amber);color:#1B222C;border-color:var(--amber);}
   .auth-lang{display:flex;justify-content:center;margin-bottom:14px;}
+
+  /* ---------- turnos por dia, feriados, abono, lembretes ---------- */
+  .day-row{display:grid;grid-template-columns:70px 1fr auto;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);}
+  .day-row:last-child{border-bottom:none;}
+  .day-row .dname{font-size:12.5px;font-weight:600;color:var(--text-muted);}
+  .day-row.active .dname{color:var(--text);}
+  .day-toggle{width:38px;height:22px;border-radius:999px;border:1px solid var(--border);background:var(--surface-2);position:relative;cursor:pointer;flex-shrink:0;}
+  .day-toggle .knob{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--text-muted);transition:transform .15s ease, background .15s ease;}
+  .day-toggle.on{background:var(--amber);border-color:var(--amber);}
+  .day-toggle.on .knob{transform:translateX(16px);background:#1B222C;}
+  .day-hours-input{width:100%;}
+  .subsection-title{font-size:11.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin:18px 0 8px;}
+  .holiday-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
+  .holiday-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface-2);border-radius:8px;padding:8px 10px;font-size:12.5px;}
+  .holiday-row .hname{color:var(--text);}
+  .holiday-row .hdate{color:var(--text-muted);font-family:'Space Mono',monospace;font-size:11.5px;margin-right:8px;}
+  .holiday-row.national{opacity:.7;}
+  .add-holiday-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;}
+  .reminder-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px;}
+  .reminder-grid label{font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .badge-holiday{display:inline-block;font-size:10px;font-weight:700;color:var(--amber);background:rgba(232,163,61,.15);padding:2px 6px;border-radius:5px;margin-left:6px;text-transform:uppercase;}
+  .badge-abono{display:inline-block;font-size:10px;font-weight:700;color:var(--teal);background:rgba(79,176,165,.15);padding:2px 6px;border-radius:5px;}
+  .chart-wrap{background:var(--surface-2);border-radius:10px;padding:12px;margin-top:16px;}
+  .chart-wrap canvas{max-height:220px;}
+  .chart-title{font-size:11.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+  .export-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+  .export-btn{flex:1;min-width:120px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+  .export-btn:hover{border-color:var(--amber-dim);}
 </style>
 </head>
 <body>
@@ -248,17 +281,34 @@
       <span class="chev" id="settingsChev">▾</span>
     </div>
     <div class="block-body" id="settingsBody">
-      <div class="field-row" style="margin-top:12px;"><label data-i18n="workDaysLabel">Dias de trabalho</label></div>
-      <div class="days-row" id="daysRow"></div>
-      <div class="field-row">
-        <label for="dailyHours" data-i18n="dailyHoursLabel">Jornada diária (horas)</label>
-        <input type="number" id="dailyHours" min="0" step="0.5" value="8">
-      </div>
-      <div class="field-row">
+      <div class="subsection-title" data-i18n="workDaysLabel" style="margin-top:12px;">Dias de trabalho</div>
+      <div id="daysTable"></div>
+      <div class="field-row" style="margin-top:14px;">
         <label for="hourlyRate" data-i18n="hourlyRateLabel">Valor da hora (R$)</label>
         <input type="number" id="hourlyRate" min="0" step="0.01" value="0">
       </div>
       <button class="save-settings" id="saveSettingsBtn" data-i18n="saveRoutine">Salvar rotina</button>
+
+      <div class="subsection-title" data-i18n="holidaysTitle">Feriados</div>
+      <div class="holiday-list" id="holidayList"></div>
+      <div class="add-holiday-row">
+        <div><label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;" data-i18n="dateLabel">Data</label><input type="date" id="newHolidayDate"></div>
+        <div><label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;" data-i18n="holidayNameLabel">Nome</label><input type="text" id="newHolidayName" data-i18n-placeholder="holidayNamePlaceholder" placeholder="ex: Aniversário da cidade"></div>
+        <button class="save-settings" id="addHolidayBtn" data-i18n="addBtn">+ Adicionar</button>
+      </div>
+
+      <div class="subsection-title" data-i18n="remindersTitle">Lembretes para bater o ponto</div>
+      <div class="toggle-row" style="margin-bottom:12px;">
+        <label style="font-size:13px;color:var(--text-muted);" data-i18n="remindersEnable">Ativar lembretes (app precisa estar aberto)</label>
+        <div class="day-toggle" id="remindersToggle"><div class="knob"></div></div>
+      </div>
+      <div class="reminder-grid">
+        <div><label data-i18n="fieldEntrada">Entrada</label><input type="time" id="remEntrada"></div>
+        <div><label data-i18n="fieldSaidaAlmoco">Saída almoço</label><input type="time" id="remSaidaAlmoco"></div>
+        <div><label data-i18n="fieldVoltaAlmoco">Volta almoço</label><input type="time" id="remVoltaAlmoco"></div>
+        <div><label data-i18n="fieldSaida">Saída</label><input type="time" id="remSaida"></div>
+      </div>
+      <button class="save-settings" id="saveRemindersBtn" style="margin-top:12px;" data-i18n="saveReminders">Salvar lembretes</button>
     </div>
   </section>
 
@@ -299,6 +349,20 @@
       </div>
 
       <div class="hist-list" id="repList" style="margin-top:6px;"></div>
+
+      <div class="export-row">
+        <button class="export-btn" id="exportPdfBtn" data-i18n="exportPdf">Exportar PDF</button>
+        <button class="export-btn" id="exportXlsxBtn" data-i18n="exportXlsx">Exportar Excel</button>
+      </div>
+
+      <div class="chart-wrap">
+        <div class="chart-title" data-i18n="chartWorkedTitle">Horas trabalhadas no período</div>
+        <canvas id="chartWorked"></canvas>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-title" data-i18n="chartBalanceTitle">Evolução do banco de horas</div>
+        <canvas id="chartBalance"></canvas>
+      </div>
     </div>
   </section>
 
@@ -313,6 +377,7 @@
     <div class="mode-toggle">
       <button id="modeBatidas" class="active" data-i18n="modeBatidas">Batidas</button>
       <button id="modeManual" data-i18n="modeManual">Total manual</button>
+      <button id="modeAbono" data-i18n="modeAbono">Abono</button>
     </div>
     <div id="batidasFields" class="modal-grid">
       <div><label data-i18n="fieldEntrada">Entrada</label><input type="time" id="mEntrada"></div>
@@ -323,6 +388,10 @@
     <div id="manualFields" class="full-row" style="display:none;">
       <label data-i18n="totalWorkedLabel">Total de horas trabalhadas</label>
       <input type="number" id="mManual" min="0" step="0.25" data-i18n-placeholder="exPlaceholder" placeholder="ex: 8.5">
+    </div>
+    <div id="abonoFields" class="full-row" style="display:none;">
+      <label data-i18n="abonoReasonLabel">Motivo (opcional)</label>
+      <input type="text" id="mAbonoReason" data-i18n-placeholder="abonoReasonPlaceholder" placeholder="ex: Atestado médico">
     </div>
     <div class="modal-actions">
       <button class="btn ghost" id="modalCancel" data-i18n="cancelBtn">Cancelar</button>
@@ -379,7 +448,16 @@
       errInvalidEmail:'E-mail inválido.', errEmailNotConfirmed:'Confirme seu e-mail (verifique sua caixa de entrada) antes de entrar.',
       errRateLimit:'Muitas tentativas. Tente novamente mais tarde.', errNetwork:'Falha de conexão. Confira sua internet.', errGeneric:'Ocorreu um erro. Tente novamente.',
       loadFailAlert:'Não foi possível carregar seus dados. Confira sua conexão com a internet.', saveFailAlert:'Não foi possível salvar. Confira sua conexão com a internet.',
-      exPlaceholder:'ex: 8.5'
+      exPlaceholder:'ex: 8.5',
+      modeAbono:'Abono', abonoReasonLabel:'Motivo (opcional)', abonoReasonPlaceholder:'ex: Atestado médico', abonoTag:'Abonado',
+      holidaysTitle:'Feriados', holidayNameLabel:'Nome', holidayNamePlaceholder:'ex: Aniversário da cidade', addBtn:'+ Adicionar',
+      holidayTag:'Feriado', nationalTag:'nacional',
+      remindersTitle:'Lembretes para bater o ponto', remindersEnable:'Ativar lembretes (app precisa estar aberto)', saveReminders:'Salvar lembretes',
+      remindersOn:'Lembretes ativados.', remindersOff:'Lembretes desativados.', notifDenied:'Permissão de notificação negada pelo navegador.',
+      exportPdf:'Exportar PDF', exportXlsx:'Exportar Excel',
+      chartWorkedTitle:'Horas trabalhadas no período', chartBalanceTitle:'Evolução do banco de horas',
+      pdfTitlePrefix:'Relatório de ponto', pdfPeriod:'Período', pdfGeneratedAt:'Gerado em', pdfColDate:'Data', pdfColTimes:'Registros', pdfColWorked:'Trabalhado', pdfColBalance:'Saldo', pdfColEarned:'Ganho',
+      xlsxSheetName:'Relatório'
     },
     en: {
       eyebrow:'Work log', appTitle:'Time Card', logout:'Log out', today:'Today',
@@ -401,7 +479,16 @@
       errInvalidEmail:'Invalid email.', errEmailNotConfirmed:'Confirm your email (check your inbox) before logging in.',
       errRateLimit:'Too many attempts. Try again later.', errNetwork:'Connection failed. Check your internet.', errGeneric:'An error occurred. Try again.',
       loadFailAlert:'Could not load your data. Check your internet connection.', saveFailAlert:'Could not save. Check your internet connection.',
-      exPlaceholder:'e.g. 8.5'
+      exPlaceholder:'e.g. 8.5',
+      modeAbono:'Excused', abonoReasonLabel:'Reason (optional)', abonoReasonPlaceholder:'e.g. Medical note', abonoTag:'Excused',
+      holidaysTitle:'Holidays', holidayNameLabel:'Name', holidayNamePlaceholder:'e.g. City anniversary', addBtn:'+ Add',
+      holidayTag:'Holiday', nationalTag:'national',
+      remindersTitle:'Clock-in reminders', remindersEnable:'Enable reminders (app must be open)', saveReminders:'Save reminders',
+      remindersOn:'Reminders enabled.', remindersOff:'Reminders disabled.', notifDenied:'Notification permission denied by the browser.',
+      exportPdf:'Export PDF', exportXlsx:'Export Excel',
+      chartWorkedTitle:'Hours worked in period', chartBalanceTitle:'Hours bank over time',
+      pdfTitlePrefix:'Time report', pdfPeriod:'Period', pdfGeneratedAt:'Generated on', pdfColDate:'Date', pdfColTimes:'Log', pdfColWorked:'Worked', pdfColBalance:'Balance', pdfColEarned:'Earned',
+      xlsxSheetName:'Report'
     },
     es: {
       eyebrow:'Registro laboral', appTitle:'Tarjeta de Horario', logout:'Salir', today:'Hoy',
@@ -423,7 +510,16 @@
       errInvalidEmail:'Correo inválido.', errEmailNotConfirmed:'Confirma tu correo (revisa tu bandeja de entrada) antes de iniciar sesión.',
       errRateLimit:'Demasiados intentos. Inténtalo más tarde.', errNetwork:'Fallo de conexión. Revisa tu internet.', errGeneric:'Ocurrió un error. Inténtalo de nuevo.',
       loadFailAlert:'No se pudieron cargar tus datos. Revisa tu conexión a internet.', saveFailAlert:'No se pudo guardar. Revisa tu conexión a internet.',
-      exPlaceholder:'ej: 8.5'
+      exPlaceholder:'ej: 8.5',
+      modeAbono:'Abono', abonoReasonLabel:'Motivo (opcional)', abonoReasonPlaceholder:'ej: Justificante médico', abonoTag:'Abonado',
+      holidaysTitle:'Feriados', holidayNameLabel:'Nombre', holidayNamePlaceholder:'ej: Aniversario de la ciudad', addBtn:'+ Añadir',
+      holidayTag:'Feriado', nationalTag:'nacional',
+      remindersTitle:'Recordatorios para fichar', remindersEnable:'Activar recordatorios (la app debe estar abierta)', saveReminders:'Guardar recordatorios',
+      remindersOn:'Recordatorios activados.', remindersOff:'Recordatorios desactivados.', notifDenied:'Permiso de notificación denegado por el navegador.',
+      exportPdf:'Exportar PDF', exportXlsx:'Exportar Excel',
+      chartWorkedTitle:'Horas trabajadas en el período', chartBalanceTitle:'Evolución del banco de horas',
+      pdfTitlePrefix:'Informe de horario', pdfPeriod:'Período', pdfGeneratedAt:'Generado el', pdfColDate:'Fecha', pdfColTimes:'Registros', pdfColWorked:'Trabajado', pdfColBalance:'Saldo', pdfColEarned:'Ganado',
+      xlsxSheetName:'Informe'
     }
   };
 
@@ -481,9 +577,35 @@
   function SLOT_LABEL(k){ return SLOT_LABELS_MAP[currentLang][k]; }
   const SLOT_KEYS = ['entrada','saidaAlmoco','voltaAlmoco','saida'];
 
-  function defaultState(){ return { settings:{ dailyHours:8, workDays:[1,2,3,4,5], hourlyRate:0 }, entries:{} }; }
+  function defaultState(){
+    return {
+      settings:{
+        hoursPerDay:{0:0,1:8,2:8,3:8,4:8,5:8,6:0},
+        hourlyRate:0,
+        customHolidays:[], // [{date:'YYYY-MM-DD', name:'...'}]
+        remindersEnabled:false,
+        reminderTimes:{ entrada:'', saidaAlmoco:'', voltaAlmoco:'', saida:'' }
+      },
+      entries:{}
+    };
+  }
+  function migrateSettings(settings){
+    const s = Object.assign({}, defaultState().settings, settings||{});
+    // migra formato antigo (dailyHours + workDays) para hoursPerDay
+    if(!settings || !settings.hoursPerDay){
+      const dailyHours = (settings && settings.dailyHours) || 8;
+      const workDays = (settings && settings.workDays) || [1,2,3,4,5];
+      const hpd = {0:0,1:0,2:0,3:0,4:0,5:0,6:0};
+      workDays.forEach(d=>{ hpd[d] = dailyHours; });
+      s.hoursPerDay = hpd;
+    }
+    return s;
+  }
   let state = defaultState();
   let editingDate = null;
+  let chartWorkedInstance = null, chartBalanceInstance = null;
+  let reminderInterval = null;
+  let notifiedToday = {};
 
   function pad(n){ return String(n).padStart(2,'0'); }
   function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
@@ -503,11 +625,44 @@
     return 'R$ ' + (val||0).toLocaleString(LOCALE_MAP[currentLang], { minimumFractionDigits:2, maximumFractionDigits:2 });
   }
 
-  function getEntry(key){
-    return state.entries[key] || { entrada:null, saidaAlmoco:null, voltaAlmoco:null, saida:null, manualMinutes:null };
+  // ---------- feriados (nacionais calculados + personalizados) ----------
+  function easterDate(year){
+    const a=year%19, b=Math.floor(year/100), c=year%100, d=Math.floor(b/4), e=b%4,
+          f=Math.floor((b+8)/25), g=Math.floor((b-f+1)/3), h=(19*a+b-d-g+15)%30,
+          i=Math.floor(c/4), k=c%4, l=(32+2*e+2*i-h-k)%7, m=Math.floor((a+11*h+22*l)/451),
+          month=Math.floor((h+l-7*m+114)/31), day=((h+l-7*m+114)%31)+1;
+    return new Date(year, month-1, day);
   }
+  function addDays(date, n){ const d = new Date(date); d.setDate(d.getDate()+n); return d; }
+  function nationalHolidaysForYear(year){
+    const easter = easterDate(year);
+    const fixed = [
+      [0,1,'Confraternização Universal'], [3,21,'Tiradentes'], [4,1,'Dia do Trabalho'],
+      [8,7,'Independência do Brasil'], [9,12,'Nossa Senhora Aparecida'], [10,2,'Finados'],
+      [10,15,'Proclamação da República'], [10,20,'Consciência Negra'], [11,25,'Natal']
+    ].map(([m,d,name])=> ({ date: year+'-'+pad(m+1)+'-'+pad(d), name, national:true }));
+    const movable = [
+      [addDays(easter,-48),'Carnaval (segunda)'], [addDays(easter,-47),'Carnaval (terça)'],
+      [addDays(easter,-2),'Sexta-feira Santa'], [addDays(easter,60),'Corpus Christi']
+    ].map(([d,name])=> ({ date: keyFromDate(d), name, national:true }));
+    return fixed.concat(movable);
+  }
+  function allHolidaysForYear(year){
+    const custom = (state.settings.customHolidays||[]).filter(h=>h.date.startsWith(String(year))).map(h=>Object.assign({national:false}, h));
+    return nationalHolidaysForYear(year).concat(custom);
+  }
+  function holidayInfo(key){
+    const year = parseInt(key.slice(0,4),10);
+    return allHolidaysForYear(year).find(h=>h.date===key) || null;
+  }
+
+  function getEntry(key){
+    return state.entries[key] || { entrada:null, saidaAlmoco:null, voltaAlmoco:null, saida:null, manualMinutes:null, type:null };
+  }
+  function isAbono(entry){ return !!entry && entry.type === 'abono'; }
   function workedMinutes(entry){
     if(!entry) return 0;
+    if(isAbono(entry)) return 0;
     if(entry.manualMinutes != null) return entry.manualMinutes;
     let total = 0;
     const e = timeToMinutes(entry.entrada), sa = timeToMinutes(entry.saidaAlmoco),
@@ -517,15 +672,31 @@
     return total;
   }
   function expectedMinutes(key){
+    if(holidayInfo(key)) return 0;
     const wd = dateKeyToDate(key).getDay();
-    if(state.settings.workDays.includes(wd)) return state.settings.dailyHours*60;
-    return 0;
+    return (state.settings.hoursPerDay[wd] || 0) * 60;
   }
-  function saldoMinutes(key, entry){ return workedMinutes(entry) - expectedMinutes(key); }
+  function saldoMinutes(key, entry){
+    if(isAbono(entry)) return 0;
+    return workedMinutes(entry) - expectedMinutes(key);
+  }
   function hasAnyData(entry){
     if(!entry) return false;
-    return entry.manualMinutes != null || SLOT_KEYS.some(k=>entry[k]);
+    return isAbono(entry) || entry.manualMinutes != null || SLOT_KEYS.some(k=>entry[k]);
   }
+  function timesStrFor(entry){
+    if(isAbono(entry)) return t('abonoTag') + (entry.reason ? ' · '+entry.reason : '');
+    if(entry.manualMinutes!=null) return t('manualTotalPrefix')+' '+minutesToLabel(entry.manualMinutes);
+    return SLOT_KEYS.map(k=>entry[k]||'--:--').join(' · ');
+  }
+  function dayBadges(key){
+    let html = '';
+    const h = holidayInfo(key);
+    if(h) html += `<span class="badge-holiday">${t('holidayTag')}</span>`;
+    return html;
+  }
+
+
 
   // ---------- armazenamento (tabela ponto_dados no Supabase/Postgres) ----------
   async function loadData(){
@@ -537,7 +708,7 @@
         .maybeSingle();
       if(error) throw error;
       if(data){
-        state.settings = Object.assign(defaultState().settings, data.settings||{});
+        state.settings = migrateSettings(data.settings);
         state.entries = data.entries || {};
       } else {
         state = defaultState();
@@ -548,6 +719,7 @@
       alert(t('loadFailAlert'));
     }
     renderAll();
+    setupReminders();
   }
   async function saveData(){
     if(!currentUid) return;
@@ -663,23 +835,79 @@
   }
 
   function renderSettings(){
-    const row = document.getElementById('daysRow');
-    row.innerHTML = '';
+    const table = document.getElementById('daysTable');
+    table.innerHTML = '';
     WEEKDAYS().forEach((label, idx)=>{
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = 'day-chip' + (state.settings.workDays.includes(idx) ? ' active':'');
-      chip.textContent = label;
-      chip.addEventListener('click', ()=>{
-        const i = state.settings.workDays.indexOf(idx);
-        if(i>-1) state.settings.workDays.splice(i,1); else state.settings.workDays.push(idx);
-        chip.classList.toggle('active');
+      const hours = state.settings.hoursPerDay[idx] || 0;
+      const isOn = hours > 0;
+      const row = document.createElement('div');
+      row.className = 'day-row' + (isOn ? ' active' : '');
+      row.innerHTML = `
+        <span class="dname">${label}</span>
+        <input type="number" class="day-hours-input" min="0" step="0.5" value="${hours}" ${isOn?'':'disabled'} data-day="${idx}">
+        <div class="day-toggle ${isOn?'on':''}" data-toggle="${idx}"><div class="knob"></div></div>
+      `;
+      const toggle = row.querySelector('.day-toggle');
+      const input = row.querySelector('.day-hours-input');
+      toggle.addEventListener('click', ()=>{
+        const nowOn = !toggle.classList.contains('on');
+        toggle.classList.toggle('on', nowOn);
+        row.classList.toggle('active', nowOn);
+        input.disabled = !nowOn;
+        if(nowOn && parseFloat(input.value)<=0) input.value = 8;
+        if(!nowOn) input.value = 0;
       });
-      row.appendChild(chip);
+      table.appendChild(row);
     });
-    document.getElementById('dailyHours').value = state.settings.dailyHours;
     document.getElementById('hourlyRate').value = state.settings.hourlyRate || 0;
+    renderHolidayList();
+    document.getElementById('remindersToggle').classList.toggle('on', !!state.settings.remindersEnabled);
+    const rt = state.settings.reminderTimes || {};
+    document.getElementById('remEntrada').value = rt.entrada || '';
+    document.getElementById('remSaidaAlmoco').value = rt.saidaAlmoco || '';
+    document.getElementById('remVoltaAlmoco').value = rt.voltaAlmoco || '';
+    document.getElementById('remSaida').value = rt.saida || '';
   }
+
+  function readHoursPerDayFromUI(){
+    const hpd = {0:0,1:0,2:0,3:0,4:0,5:0,6:0};
+    document.querySelectorAll('#daysTable .day-hours-input').forEach(inp=>{
+      const day = parseInt(inp.getAttribute('data-day'),10);
+      const on = inp.closest('.day-row').querySelector('.day-toggle').classList.contains('on');
+      hpd[day] = on ? (parseFloat(inp.value)||0) : 0;
+    });
+    return hpd;
+  }
+
+  function renderHolidayList(){
+    const year = new Date().getFullYear();
+    const nextYear = year+1;
+    const all = allHolidaysForYear(year).concat(allHolidaysForYear(nextYear))
+      .filter(h=>{ const d = dateKeyToDate(h.date); return d >= new Date(year,0,1); })
+      .sort((a,b)=> a.date.localeCompare(b.date));
+    const listEl = document.getElementById('holidayList');
+    listEl.innerHTML = '';
+    all.forEach(h=>{
+      const row = document.createElement('div');
+      row.className = 'holiday-row' + (h.national ? ' national' : '');
+      const d = dateKeyToDate(h.date);
+      row.innerHTML = `<span><span class="hdate">${pad(d.getDate())}/${pad(d.getMonth()+1)}</span>${h.name}${h.national?' <span style="opacity:.7">('+t('nationalTag')+')</span>':''}</span>`;
+      if(!h.national){
+        const delBtn = document.createElement('button');
+        delBtn.className = 'icon-btn';
+        delBtn.textContent = '✕';
+        delBtn.addEventListener('click', ()=>{
+          state.settings.customHolidays = state.settings.customHolidays.filter(c=> !(c.date===h.date && c.name===h.name));
+          saveData();
+          renderHolidayList();
+          renderAll();
+        });
+        row.appendChild(delBtn);
+      }
+      listEl.appendChild(row);
+    });
+  }
+
 
   function renderHistory(){
     const listEl = document.getElementById('histList');
@@ -695,13 +923,13 @@
       const worked = workedMinutes(entry);
       const saldo = saldoMinutes(key, entry);
       const saldoClass = saldo>0?'pos':(saldo<0?'neg':'zero');
-      const timesStr = entry.manualMinutes!=null ? t('manualTotalPrefix')+' '+minutesToLabel(entry.manualMinutes) : SLOT_KEYS.map(k=>entry[k]||'--:--').join(' · ');
+      const timesStr = timesStrFor(entry);
       const row = document.createElement('div');
       row.className = 'hist-row';
       row.innerHTML = `
         <div class="hist-left">
           <div class="hist-date"><span class="wd">${WEEKDAYS()[d.getDay()]}</span><span class="dm">${pad(d.getDate())}/${pad(d.getMonth()+1)}</span></div>
-          <div class="hist-times">${timesStr}</div>
+          <div class="hist-times">${timesStr}${dayBadges(key)}</div>
         </div>
         <div class="hist-right">
           <div class="hist-worked">${minutesToLabel(worked)}</div>
@@ -720,6 +948,7 @@
       delete state.entries[key];
       saveData();
       renderAll();
+      runReport();
     }));
   }
 
@@ -729,41 +958,50 @@
     document.getElementById('modalDate').value = editingDate;
     const entry = getEntry(editingDate);
     const isManual = entry.manualMinutes != null;
-    setMode(isManual ? 'manual' : 'batidas');
+    const mode = isAbono(entry) ? 'abono' : (isManual ? 'manual' : 'batidas');
+    setMode(mode);
     document.getElementById('mEntrada').value = entry.entrada || '';
     document.getElementById('mSaidaAlmoco').value = entry.saidaAlmoco || '';
     document.getElementById('mVoltaAlmoco').value = entry.voltaAlmoco || '';
     document.getElementById('mSaida').value = entry.saida || '';
     document.getElementById('mManual').value = entry.manualMinutes!=null ? (entry.manualMinutes/60) : '';
+    document.getElementById('mAbonoReason').value = entry.reason || '';
     document.getElementById('overlay').classList.add('open');
   }
   function closeModal(){ document.getElementById('overlay').classList.remove('open'); editingDate = null; }
   function setMode(mode){
     document.getElementById('modeBatidas').classList.toggle('active', mode==='batidas');
     document.getElementById('modeManual').classList.toggle('active', mode==='manual');
+    document.getElementById('modeAbono').classList.toggle('active', mode==='abono');
     document.getElementById('batidasFields').style.display = mode==='batidas' ? 'grid' : 'none';
     document.getElementById('manualFields').style.display = mode==='manual' ? 'block' : 'none';
+    document.getElementById('abonoFields').style.display = mode==='abono' ? 'block' : 'none';
   }
   function saveModal(){
     const key = document.getElementById('modalDate').value || editingDate;
     if(!key) return;
     const isManual = document.getElementById('modeManual').classList.contains('active');
-    if(isManual){
+    const isAbonoMode = document.getElementById('modeAbono').classList.contains('active');
+    if(isAbonoMode){
+      state.entries[key] = { entrada:null, saidaAlmoco:null, voltaAlmoco:null, saida:null, manualMinutes:null, type:'abono', reason: document.getElementById('mAbonoReason').value || '' };
+    } else if(isManual){
       const hrs = parseFloat(document.getElementById('mManual').value);
-      state.entries[key] = { entrada:null, saidaAlmoco:null, voltaAlmoco:null, saida:null, manualMinutes: isNaN(hrs)?0:Math.round(hrs*60) };
+      state.entries[key] = { entrada:null, saidaAlmoco:null, voltaAlmoco:null, saida:null, manualMinutes: isNaN(hrs)?0:Math.round(hrs*60), type:null };
     } else {
       state.entries[key] = {
         entrada: document.getElementById('mEntrada').value || null,
         saidaAlmoco: document.getElementById('mSaidaAlmoco').value || null,
         voltaAlmoco: document.getElementById('mVoltaAlmoco').value || null,
         saida: document.getElementById('mSaida').value || null,
-        manualMinutes: null
+        manualMinutes: null, type:null
       };
     }
     saveData();
     closeModal();
     renderAll();
+    runReport();
   }
+
 
   function renderAll(){ renderPunchCard(); renderSummary(); renderSettings(); renderHistory(); }
 
@@ -780,6 +1018,8 @@
   function setRepStat(valId, mins){
     document.getElementById(valId).textContent = minutesToLabel(mins);
   }
+
+  let lastReport = null;
 
   function runReport(){
     const isMonth = document.getElementById('repModeMonth').classList.contains('active');
@@ -804,20 +1044,28 @@
 
     let workedTotal = 0, expectedTotal = 0, diasRegistrados = 0;
     const rows = [];
+    const allDays = []; // para os gráficos, inclui dias sem dado
+    let running = 0;
     const cur = new Date(start);
     while(cur <= end){
       const key = keyFromDate(cur);
       const entry = state.entries[key];
-      expectedTotal += expectedMinutes(key);
+      const exp = expectedMinutes(key);
+      expectedTotal += exp;
+      const worked = hasAnyData(entry) ? workedMinutes(entry) : 0;
+      const saldoDia = hasAnyData(entry) ? saldoMinutes(key, entry) : -exp;
+      running += saldoDia;
+      allDays.push({ key, worked, running });
       if(hasAnyData(entry)){
         diasRegistrados++;
-        workedTotal += workedMinutes(entry);
+        workedTotal += worked;
         rows.push(key);
       }
       cur.setDate(cur.getDate()+1);
     }
     const saldoTotal = workedTotal - expectedTotal;
     const ganhoTotal = earningsForMinutes(workedTotal);
+    lastReport = { startKey, endKey, workedTotal, expectedTotal, saldoTotal, ganhoTotal, diasRegistrados, rows };
 
     setRepStat('repTrabalhado', workedTotal);
     setRepStat('repEsperado', expectedTotal);
@@ -827,6 +1075,8 @@
     const saldoBox = document.getElementById('repStatSaldo');
     saldoBox.classList.remove('pos','neg');
     if(saldoTotal > 0) saldoBox.classList.add('pos'); else if(saldoTotal < 0) saldoBox.classList.add('neg');
+
+    renderCharts(allDays);
 
     const listEl = document.getElementById('repList');
     if(rows.length === 0){
@@ -840,13 +1090,13 @@
       const worked = workedMinutes(entry);
       const saldo = saldoMinutes(key, entry);
       const saldoClass = saldo>0?'pos':(saldo<0?'neg':'zero');
-      const timesStr = entry.manualMinutes!=null ? t('manualTotalPrefix')+' '+minutesToLabel(entry.manualMinutes) : SLOT_KEYS.map(k=>entry[k]||'--:--').join(' · ');
+      const timesStr = timesStrFor(entry);
       const row = document.createElement('div');
       row.className = 'hist-row';
       row.innerHTML = `
         <div class="hist-left">
           <div class="hist-date"><span class="wd">${WEEKDAYS()[d.getDay()]}</span><span class="dm">${pad(d.getDate())}/${pad(d.getMonth()+1)}</span></div>
-          <div class="hist-times">${timesStr}</div>
+          <div class="hist-times">${timesStr}${dayBadges(key)}</div>
         </div>
         <div class="hist-right">
           <div class="hist-worked">${minutesToLabel(worked)}</div>
@@ -854,6 +1104,127 @@
           <div class="hist-saldo ${saldoClass}">${saldo>=0?'+':''}${minutesToLabel(saldo)}</div>
         </div>`;
       listEl.appendChild(row);
+    });
+  }
+
+  function renderCharts(allDays){
+    if(typeof Chart === 'undefined') return;
+    const labels = allDays.map(d=>{ const dt = dateKeyToDate(d.key); return pad(dt.getDate())+'/'+pad(dt.getMonth()+1); });
+    const workedHours = allDays.map(d=> +(d.worked/60).toFixed(2));
+    const runningHours = allDays.map(d=> +(d.running/60).toFixed(2));
+
+    const ctxWorked = document.getElementById('chartWorked');
+    const ctxBalance = document.getElementById('chartBalance');
+    if(chartWorkedInstance) chartWorkedInstance.destroy();
+    if(chartBalanceInstance) chartBalanceInstance.destroy();
+
+    const gridColor = 'rgba(231,228,220,0.08)';
+    const textColor = '#8891A0';
+
+    chartWorkedInstance = new Chart(ctxWorked, {
+      type: 'bar',
+      data: { labels, datasets: [{ data: workedHours, backgroundColor: '#E8A33D', borderRadius: 4, maxBarThickness: 22 }] },
+      options: {
+        plugins:{ legend:{ display:false } },
+        scales:{
+          x:{ ticks:{ color:textColor, font:{size:10} }, grid:{ display:false } },
+          y:{ ticks:{ color:textColor, font:{size:10} }, grid:{ color:gridColor } }
+        }
+      }
+    });
+    chartBalanceInstance = new Chart(ctxBalance, {
+      type: 'line',
+      data: { labels, datasets: [{ data: runningHours, borderColor: '#4FB0A5', backgroundColor: 'rgba(79,176,165,.15)', fill:true, tension:.25, pointRadius:0 }] },
+      options: {
+        plugins:{ legend:{ display:false } },
+        scales:{
+          x:{ ticks:{ color:textColor, font:{size:10} }, grid:{ display:false } },
+          y:{ ticks:{ color:textColor, font:{size:10} }, grid:{ color:gridColor } }
+        }
+      }
+    });
+  }
+
+  function exportPdf(){
+    if(!lastReport || typeof window.jspdf === 'undefined') return;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(14);
+    doc.text(t('pdfTitlePrefix') + ' — ' + t('appTitle'), 14, 16);
+    doc.setFontSize(10);
+    doc.text(`${t('pdfPeriod')}: ${lastReport.startKey} — ${lastReport.endKey}`, 14, 23);
+    doc.text(`${t('pdfGeneratedAt')}: ${new Date().toLocaleString(LOCALE_MAP[currentLang])}`, 14, 28);
+    doc.text(`${t('repWorked')}: ${minutesToLabel(lastReport.workedTotal)}   ${t('repExpected')}: ${minutesToLabel(lastReport.expectedTotal)}   ${t('repBalance')}: ${minutesToLabel(lastReport.saldoTotal)}   ${t('repEarned')}: ${formatCurrency(lastReport.ganhoTotal)}`, 14, 35);
+
+    const body = lastReport.rows.map(key=>{
+      const entry = state.entries[key];
+      const d = dateKeyToDate(key);
+      return [
+        pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear(),
+        timesStrFor(entry),
+        minutesToLabel(workedMinutes(entry)),
+        minutesToLabel(saldoMinutes(key, entry)),
+        formatCurrency(earningsForMinutes(workedMinutes(entry)))
+      ];
+    });
+    doc.autoTable({
+      startY: 42,
+      head: [[t('pdfColDate'), t('pdfColTimes'), t('pdfColWorked'), t('pdfColBalance'), t('pdfColEarned')]],
+      body,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [232,163,61], textColor: [27,34,44] }
+    });
+    doc.save(`ponto_${lastReport.startKey}_${lastReport.endKey}.pdf`);
+  }
+
+  function exportXlsx(){
+    if(!lastReport || typeof XLSX === 'undefined') return;
+    const header = [t('pdfColDate'), t('pdfColTimes'), t('pdfColWorked'), t('pdfColBalance'), t('pdfColEarned')];
+    const body = lastReport.rows.map(key=>{
+      const entry = state.entries[key];
+      const d = dateKeyToDate(key);
+      return [
+        pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear(),
+        timesStrFor(entry),
+        minutesToLabel(workedMinutes(entry)),
+        minutesToLabel(saldoMinutes(key, entry)),
+        formatCurrency(earningsForMinutes(workedMinutes(entry)))
+      ];
+    });
+    const ws = XLSX.utils.aoa_to_sheet([header, ...body]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, t('xlsxSheetName'));
+    XLSX.writeFile(wb, `ponto_${lastReport.startKey}_${lastReport.endKey}.xlsx`);
+  }
+
+  // ---------- lembretes (Notification API — funciona com o app aberto/em segundo plano) ----------
+  function setupReminders(){
+    if(reminderInterval){ clearInterval(reminderInterval); reminderInterval = null; }
+    if(!state.settings.remindersEnabled) return;
+    if(!('Notification' in window)) return;
+    if(Notification.permission === 'default'){
+      Notification.requestPermission();
+    }
+    notifiedToday = {};
+    reminderInterval = setInterval(checkReminders, 20000);
+    checkReminders();
+  }
+  function checkReminders(){
+    if(Notification.permission !== 'granted') return;
+    const now = new Date();
+    const hhmm = pad(now.getHours())+':'+pad(now.getMinutes());
+    const dayKey = todayKey();
+    const rt = state.settings.reminderTimes || {};
+    SLOT_KEYS.forEach(slot=>{
+      const target = rt[slot];
+      if(!target) return;
+      const id = dayKey+'-'+slot;
+      if(target === hhmm && !notifiedToday[id]){
+        notifiedToday[id] = true;
+        try{
+          new Notification(t('appTitle'), { body: PUNCH_ACTION_MAP[currentLang][slot], icon:'icons/icon-192.png' });
+        }catch(e){}
+      }
     });
   }
 
@@ -867,7 +1238,10 @@
     document.getElementById('repModeMonth').addEventListener('click', ()=>repSetMode('month'));
     document.getElementById('repModePeriod').addEventListener('click', ()=>repSetMode('period'));
     document.getElementById('repSearchBtn').addEventListener('click', runReport);
+    document.getElementById('exportPdfBtn').addEventListener('click', exportPdf);
+    document.getElementById('exportXlsxBtn').addEventListener('click', exportXlsx);
   }
+
 
   document.getElementById('punchBtn').addEventListener('click', punchNow);
   document.getElementById('addDayBtn').addEventListener('click', ()=>openModal(null));
@@ -875,19 +1249,46 @@
   document.getElementById('modalSave').addEventListener('click', saveModal);
   document.getElementById('modeBatidas').addEventListener('click', ()=>setMode('batidas'));
   document.getElementById('modeManual').addEventListener('click', ()=>setMode('manual'));
+  document.getElementById('modeAbono').addEventListener('click', ()=>setMode('abono'));
   document.getElementById('overlay').addEventListener('click', (e)=>{ if(e.target.id==='overlay') closeModal(); });
   document.getElementById('settingsHead').addEventListener('click', ()=>{
     document.getElementById('settingsBody').classList.toggle('open');
     document.getElementById('settingsChev').classList.toggle('open');
   });
   document.getElementById('saveSettingsBtn').addEventListener('click', ()=>{
-    const hrs = parseFloat(document.getElementById('dailyHours').value);
-    state.settings.dailyHours = isNaN(hrs) ? 8 : hrs;
+    state.settings.hoursPerDay = readHoursPerDayFromUI();
     const rate = parseFloat(document.getElementById('hourlyRate').value);
     state.settings.hourlyRate = isNaN(rate) ? 0 : rate;
     saveData();
     renderAll();
     runReport();
+  });
+  document.getElementById('addHolidayBtn').addEventListener('click', ()=>{
+    const date = document.getElementById('newHolidayDate').value;
+    const name = document.getElementById('newHolidayName').value.trim();
+    if(!date || !name) return;
+    state.settings.customHolidays = state.settings.customHolidays || [];
+    state.settings.customHolidays.push({ date, name });
+    document.getElementById('newHolidayDate').value = '';
+    document.getElementById('newHolidayName').value = '';
+    saveData();
+    renderHolidayList();
+    renderAll();
+    runReport();
+  });
+  document.getElementById('remindersToggle').addEventListener('click', function(){
+    this.classList.toggle('on');
+  });
+  document.getElementById('saveRemindersBtn').addEventListener('click', ()=>{
+    state.settings.remindersEnabled = document.getElementById('remindersToggle').classList.contains('on');
+    state.settings.reminderTimes = {
+      entrada: document.getElementById('remEntrada').value || '',
+      saidaAlmoco: document.getElementById('remSaidaAlmoco').value || '',
+      voltaAlmoco: document.getElementById('remVoltaAlmoco').value || '',
+      saida: document.getElementById('remSaida').value || ''
+    };
+    saveData();
+    setupReminders();
   });
   document.getElementById('resetBtn').addEventListener('click', async ()=>{
     if(confirm(t('confirmDeleteAll'))){
@@ -997,6 +1398,7 @@
     } else {
       currentUid = null;
       state = defaultState();
+      if(reminderInterval){ clearInterval(reminderInterval); reminderInterval = null; }
       document.getElementById('authScreen').style.display = 'flex';
       document.getElementById('appRoot').style.display = 'none';
     }
