@@ -97,8 +97,10 @@
   .day-chip.active{background:var(--amber);border-color:var(--amber);color:#1B222C;}
   .field-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
   .field-row label{font-size:13px;color:var(--text-muted);min-width:160px;}
-  input[type=number],input[type=date],input[type=time]{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 10px;font-family:'Space Mono',monospace;font-size:13.5px;width:100%;}
-  input:focus-visible,button:focus-visible,.day-chip:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+  input[type=number],input[type=date],input[type=time],select{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 10px;font-family:'Inter',sans-serif;font-size:13.5px;width:100%;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%238891A0'><path d='M5.5 7.5l4.5 5 4.5-5z'/></svg>");background-repeat:no-repeat;background-position:right 10px center;background-size:14px;padding-right:30px;}
+  input[type=number],input[type=date],input[type=time]{font-family:'Space Mono',monospace;background-image:none;padding-right:10px;}
+  select{cursor:pointer;}
+  input:focus-visible,button:focus-visible,select:focus-visible,.day-chip:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
   .save-settings{background:var(--amber);color:#1B222C;border:none;border-radius:8px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;}
 
   .history-head{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 4px;}
@@ -641,6 +643,11 @@
   const SLOT_KEYS = ['entrada','saidaAlmoco','voltaAlmoco','saida'];
 
   const CURRENCIES = ['BRL','USD','EUR','PLN','GBP','JPY','CNY','CAD','AUD','CHF','MXN','INR','ZAR','SEK','NOK','DKK','HUF','CZK','TRY','KRW','SGD','HKD','NZD','THB','ILS','RON','BGN','IDR','MYR','PHP'];
+  const CURRENCY_NAMES = {
+    pt:{BRL:'Real brasileiro',USD:'Dólar americano',EUR:'Euro',PLN:'Zloty polonês',GBP:'Libra esterlina',JPY:'Iene japonês',CNY:'Yuan chinês',CAD:'Dólar canadense',AUD:'Dólar australiano',CHF:'Franco suíço',MXN:'Peso mexicano',INR:'Rupia indiana',ZAR:'Rand sul-africano',SEK:'Coroa sueca',NOK:'Coroa norueguesa',DKK:'Coroa dinamarquesa',HUF:'Florim húngaro',CZK:'Coroa tcheca',TRY:'Lira turca',KRW:'Won sul-coreano',SGD:'Dólar de Cingapura',HKD:'Dólar de Hong Kong',NZD:'Dólar neozelandês',THB:'Baht tailandês',ILS:'Novo shekel israelense',RON:'Leu romeno',BGN:'Lev búlgaro',IDR:'Rupia indonésia',MYR:'Ringgit malaio',PHP:'Peso filipino'},
+    en:{BRL:'Brazilian Real',USD:'US Dollar',EUR:'Euro',PLN:'Polish Zloty',GBP:'British Pound',JPY:'Japanese Yen',CNY:'Chinese Yuan',CAD:'Canadian Dollar',AUD:'Australian Dollar',CHF:'Swiss Franc',MXN:'Mexican Peso',INR:'Indian Rupee',ZAR:'South African Rand',SEK:'Swedish Krona',NOK:'Norwegian Krone',DKK:'Danish Krone',HUF:'Hungarian Forint',CZK:'Czech Koruna',TRY:'Turkish Lira',KRW:'South Korean Won',SGD:'Singapore Dollar',HKD:'Hong Kong Dollar',NZD:'New Zealand Dollar',THB:'Thai Baht',ILS:'Israeli Shekel',RON:'Romanian Leu',BGN:'Bulgarian Lev',IDR:'Indonesian Rupiah',MYR:'Malaysian Ringgit',PHP:'Philippine Peso'},
+    es:{BRL:'Real brasileño',USD:'Dólar estadounidense',EUR:'Euro',PLN:'Zloty polaco',GBP:'Libra esterlina',JPY:'Yen japonés',CNY:'Yuan chino',CAD:'Dólar canadiense',AUD:'Dólar australiano',CHF:'Franco suizo',MXN:'Peso mexicano',INR:'Rupia india',ZAR:'Rand sudafricano',SEK:'Corona sueca',NOK:'Corona noruega',DKK:'Corona danesa',HUF:'Florín húngaro',CZK:'Corona checa',TRY:'Lira turca',KRW:'Won surcoreano',SGD:'Dólar de Singapur',HKD:'Dólar de Hong Kong',NZD:'Dólar neozelandés',THB:'Baht tailandés',ILS:'Nuevo shekel israelí',RON:'Leu rumano',BGN:'Lev búlgaro',IDR:'Rupia indonesia',MYR:'Ringgit malayo',PHP:'Peso filipino'}
+  };
 
   function defaultState(){
     return {
@@ -697,10 +704,21 @@
     }
   }
   async function fetchExchangeRate(from, to){
-    const res = await fetch(`https://api.frankfurter.app/latest?amount=1&from=${from}&to=${to}`);
-    if(!res.ok) throw new Error('rate fetch failed');
-    const data = await res.json();
-    return data.rates[to];
+    const endpoints = [
+      `https://api.frankfurter.dev/v1/latest?amount=1&from=${from}&to=${to}`,
+      `https://api.frankfurter.app/latest?amount=1&from=${from}&to=${to}`
+    ];
+    let lastErr = null;
+    for(const url of endpoints){
+      try{
+        const res = await fetch(url);
+        if(!res.ok) throw new Error('rate fetch failed: '+res.status);
+        const data = await res.json();
+        if(data && data.rates && data.rates[to] != null) return data.rates[to];
+        throw new Error('rate missing in response');
+      }catch(e){ lastErr = e; }
+    }
+    throw lastErr || new Error('rate fetch failed');
   }
 
   // ---------- feriados (nacionais calculados + personalizados) ----------
@@ -1279,18 +1297,22 @@
 
   // ---------- moeda e conversor com câmbio ao vivo ----------
   function populateCurrencySelects(){
+    const names = CURRENCY_NAMES[currentLang] || CURRENCY_NAMES.pt;
     [document.getElementById('currencySelect'), document.getElementById('convertToSelect')].forEach(sel=>{
-      if(!sel || sel.options.length) return;
+      if(!sel) return;
+      const prevValue = sel.value;
+      sel.innerHTML = '';
       CURRENCIES.forEach(code=>{
         const opt = document.createElement('option');
         opt.value = code;
-        opt.textContent = code;
+        opt.textContent = code + ' — ' + (names[code] || code);
         sel.appendChild(opt);
       });
+      if(prevValue && CURRENCIES.includes(prevValue)) sel.value = prevValue;
     });
     const convertTo = document.getElementById('convertToSelect');
     if(convertTo && !convertTo.dataset.inited){
-      convertTo.value = convertTo.querySelector(`option[value="${state.settings.currency==='USD'?'EUR':'USD'}"]`) ? (state.settings.currency==='USD'?'EUR':'USD') : 'USD';
+      convertTo.value = state.settings.currency === 'USD' ? 'EUR' : 'USD';
       convertTo.dataset.inited = '1';
     }
   }
@@ -1310,6 +1332,7 @@
       const converted = lastReport.ganhoTotal * rate;
       resultEl.innerHTML = `${t('convertResultPrefix')}: <b>${formatCurrency(converted, to)}</b><br><span style="font-size:11px;">${t('convertRateLabel')}: 1 ${from} = ${rate.toFixed(4)} ${to}</span>`;
     }catch(e){
+      console.error('Falha ao buscar câmbio', e);
       resultEl.textContent = t('convertFailed');
     }
   }
