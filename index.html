@@ -199,6 +199,45 @@
   .export-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
   .export-btn{flex:1;min-width:120px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
   .export-btn:hover{border-color:var(--amber-dim);}
+
+  /* ---------- login social ---------- */
+  .auth-divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;}
+  .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+  .oauth-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#1f1f1f;border:1px solid var(--border);border-radius:8px;padding:10px;font-weight:600;font-size:13.5px;cursor:pointer;font-family:'Inter',sans-serif;}
+  .oauth-btn:hover{background:#f3f3f3;}
+  .oauth-btn svg{width:18px;height:18px;flex-shrink:0;}
+
+  /* ---------- ajustes para telas pequenas ---------- */
+  @media(max-width:480px){
+    .app{padding:14px 12px 50px;padding-top:calc(14px + env(safe-area-inset-top));}
+    header{flex-wrap:wrap;gap:10px;padding:4px 2px 16px;margin-bottom:16px;}
+    .brand h1{font-size:19px;}
+    .clockbox .live{font-size:22px;}
+    .user-bar{flex-wrap:wrap;justify-content:space-between;row-gap:8px;}
+    .user-email{max-width:110px;}
+    .punch-card{padding:16px 12px 14px;}
+    .pc-slots{grid-template-columns:repeat(2,1fr);gap:8px;}
+    .pc-slot{padding:10px 4px;}
+    .pc-bottom{flex-direction:column;align-items:stretch;gap:10px;}
+    .punch-btn{justify-content:center;}
+    .pc-today-total{text-align:center;}
+    .summary-bar{grid-template-columns:repeat(2,1fr);}
+    .modal{padding:16px;max-width:none;width:calc(100% - 8px);}
+    .modal-grid{grid-template-columns:1fr 1fr;gap:8px;}
+    .add-holiday-row{grid-template-columns:1fr;}
+    .day-row{grid-template-columns:56px 1fr auto;gap:6px;}
+    .auth-card{padding:22px 18px;max-width:none;}
+    .hist-row{flex-wrap:wrap;row-gap:8px;}
+    .hist-right{flex-wrap:wrap;justify-content:flex-end;row-gap:6px;}
+    .export-row{flex-direction:column;}
+    .export-btn{min-width:0;}
+  }
+  @media(max-width:360px){
+    .pc-slot .lbl{font-size:8.5px;}
+    .pc-slot .val.filled,.pc-slot .val.empty{font-size:15px;}
+    .stat .stat-val{font-size:16px;}
+    .brand h1{font-size:17px;}
+  }
 </style>
 </head>
 <body>
@@ -232,6 +271,11 @@
       <div class="auth-forgot">
         <button type="button" id="forgotBtn" data-i18n="forgotPassword">Esqueci minha senha</button>
       </div>
+      <div class="auth-divider" data-i18n="orDivider">ou</div>
+      <button type="button" class="oauth-btn" id="googleLoginBtn">
+        <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.67-.22-2.46H12v4.66h6.47c-.28 1.5-1.13 2.77-2.4 3.62v3h3.88c2.27-2.09 3.57-5.17 3.57-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.91l-3.88-3c-1.08.72-2.46 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.27v3.1C3.25 21.3 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.28A7.2 7.2 0 0 1 4.9 12c0-.79.14-1.56.37-2.28v-3.1H1.27A11.98 11.98 0 0 0 0 12c0 1.94.46 3.77 1.27 5.38l4-3.1z"/><path fill="#EA4335" d="M12 4.77c1.76 0 3.34.6 4.58 1.79l3.44-3.44C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.27 6.62l4 3.1C6.22 6.88 8.87 4.77 12 4.77z"/></svg>
+        <span data-i18n="googleLogin">Continuar com Google</span>
+      </button>
     </div>
   </div>
 </div>
@@ -457,7 +501,7 @@
       exportPdf:'Exportar PDF', exportXlsx:'Exportar Excel',
       chartWorkedTitle:'Horas trabalhadas no período', chartBalanceTitle:'Evolução do banco de horas',
       pdfTitlePrefix:'Relatório de ponto', pdfPeriod:'Período', pdfGeneratedAt:'Gerado em', pdfColDate:'Data', pdfColTimes:'Registros', pdfColWorked:'Trabalhado', pdfColBalance:'Saldo', pdfColEarned:'Ganho',
-      xlsxSheetName:'Relatório'
+      xlsxSheetName:'Relatório', orDivider:'ou', googleLogin:'Continuar com Google'
     },
     en: {
       eyebrow:'Work log', appTitle:'Time Card', logout:'Log out', today:'Today',
@@ -488,7 +532,7 @@
       exportPdf:'Export PDF', exportXlsx:'Export Excel',
       chartWorkedTitle:'Hours worked in period', chartBalanceTitle:'Hours bank over time',
       pdfTitlePrefix:'Time report', pdfPeriod:'Period', pdfGeneratedAt:'Generated on', pdfColDate:'Date', pdfColTimes:'Log', pdfColWorked:'Worked', pdfColBalance:'Balance', pdfColEarned:'Earned',
-      xlsxSheetName:'Report'
+      xlsxSheetName:'Report', orDivider:'or', googleLogin:'Continue with Google'
     },
     es: {
       eyebrow:'Registro laboral', appTitle:'Tarjeta de Horario', logout:'Salir', today:'Hoy',
@@ -519,7 +563,7 @@
       exportPdf:'Exportar PDF', exportXlsx:'Exportar Excel',
       chartWorkedTitle:'Horas trabajadas en el período', chartBalanceTitle:'Evolución del banco de horas',
       pdfTitlePrefix:'Informe de horario', pdfPeriod:'Período', pdfGeneratedAt:'Generado el', pdfColDate:'Fecha', pdfColTimes:'Registros', pdfColWorked:'Trabajado', pdfColBalance:'Saldo', pdfColEarned:'Ganado',
-      xlsxSheetName:'Informe'
+      xlsxSheetName:'Informe', orDivider:'o', googleLogin:'Continuar con Google'
     }
   };
 
@@ -1370,6 +1414,20 @@
 
     document.getElementById('logoutBtn').addEventListener('click', ()=>{
       supabaseClient.auth.signOut();
+    });
+
+    document.getElementById('googleLoginBtn').addEventListener('click', async ()=>{
+      errorEl.textContent = '';
+      try{
+        const { error } = await supabaseClient.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: window.location.href.split('#')[0].split('?')[0] }
+        });
+        if(error) throw error;
+      }catch(err){
+        errorEl.style.color = 'var(--coral)';
+        errorEl.textContent = traduzErroAuth(err.message);
+      }
     });
   }
 
