@@ -202,6 +202,22 @@
   .export-btn{flex:1;min-width:120px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
   .export-btn:hover{border-color:var(--amber-dim);}
 
+  /* ---------- ganhos e gastos extras ---------- */
+  .extra-row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface-2);border-radius:10px;padding:10px 12px;}
+  .extra-left{display:flex;align-items:center;gap:12px;min-width:0;}
+  .extra-date{display:flex;flex-direction:column;min-width:52px;}
+  .extra-date .wd{font-size:10px;color:var(--amber);text-transform:uppercase;font-weight:700;letter-spacing:.06em;}
+  .extra-date .dm{font-size:13px;font-weight:700;font-family:'Space Mono',monospace;}
+  .extra-desc{font-size:12.5px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px;}
+  .extra-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  .extra-amount{font-size:13.5px;font-weight:700;font-family:'Space Mono',monospace;}
+  .extra-amount.ganho{color:var(--teal);}
+  .extra-amount.gasto{color:var(--coral);}
+  .extra-type-toggle{display:flex;gap:6px;margin-bottom:14px;}
+  .extra-type-toggle button{flex:1;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-muted);font-size:12.5px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+  .extra-type-toggle button.active.ganho{background:var(--teal);color:#12211f;border-color:var(--teal);}
+  .extra-type-toggle button.active.gasto{background:var(--coral);color:#2a120e;border-color:var(--coral);}
+
   /* ---------- login social ---------- */
   .auth-divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;}
   .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border);}
@@ -371,6 +387,25 @@
   </section>
 
   <section class="block">
+    <div class="block-head" id="extrasHead">
+      <h2 data-i18n="extrasTitle">Ganhos e gastos extras</h2>
+      <span class="chev" id="extrasChev">▾</span>
+    </div>
+    <div class="block-body" id="extrasBody">
+      <div class="summary-bar" style="margin-top:12px;">
+        <div class="stat"><div class="stat-lbl" data-i18n="extraIncomeTotal">Ganhos extras</div><div class="stat-val" id="vExtraGanhos" style="color:var(--teal);">R$ 0,00</div></div>
+        <div class="stat"><div class="stat-lbl" data-i18n="extraExpenseTotal">Gastos</div><div class="stat-val" id="vExtraGastos" style="color:var(--coral);">R$ 0,00</div></div>
+        <div class="stat" id="statExtraSaldo"><div class="stat-lbl" data-i18n="extraBalance">Saldo extra</div><div class="stat-val" id="vExtraSaldo">R$ 0,00</div></div>
+      </div>
+      <div class="history-head" style="padding:0 0 8px;">
+        <span></span>
+        <button class="add-day-btn" id="addExtraBtn" data-i18n="addExtra">+ Adicionar lançamento</button>
+      </div>
+      <div class="hist-list" id="extrasList" style="padding:0;"></div>
+    </div>
+  </section>
+
+  <section class="block">
     <div class="block-head" id="reportsHead">
       <h2 data-i18n="reportsTitle">Relatórios</h2>
       <span class="chev" id="reportsChev">▾</span>
@@ -396,6 +431,9 @@
         <div class="stat" id="repStatSaldo"><div class="stat-lbl" data-i18n="repBalance">Saldo</div><div class="stat-val" id="repSaldo">0h00</div></div>
         <div class="stat"><div class="stat-lbl" data-i18n="repDaysLogged">Dias registrados</div><div class="stat-val" id="repDias">0</div></div>
         <div class="stat"><div class="stat-lbl" data-i18n="repEarned">Ganho no período</div><div class="stat-val" id="repGanho">R$ 0,00</div></div>
+        <div class="stat"><div class="stat-lbl" data-i18n="repExtraIncome">Ganhos extras</div><div class="stat-val" id="repExtraGanho" style="color:var(--teal);">R$ 0,00</div></div>
+        <div class="stat"><div class="stat-lbl" data-i18n="repExtraExpense">Gastos</div><div class="stat-val" id="repExtraGasto" style="color:var(--coral);">R$ 0,00</div></div>
+        <div class="stat"><div class="stat-lbl" data-i18n="repNetTotal">Total líquido</div><div class="stat-val" id="repNetTotal">R$ 0,00</div></div>
       </div>
 
       <div class="hist-list" id="repList" style="margin-top:6px;"></div>
@@ -459,6 +497,23 @@
   </div>
 </div>
 
+<div class="overlay" id="extraOverlay">
+  <div class="modal">
+    <h3 id="extraModalTitle" data-i18n="addExtra">+ Adicionar lançamento</h3>
+    <div class="extra-type-toggle">
+      <button type="button" id="extraTypeGanho" class="active ganho" data-i18n="extraTypeIncome">Ganho</button>
+      <button type="button" id="extraTypeGasto" class="gasto" data-i18n="extraTypeExpense">Gasto</button>
+    </div>
+    <div class="full-row"><label data-i18n="dateLabel">Data</label><input type="date" id="extraDate"></div>
+    <div class="full-row"><label data-i18n="extraDescLabel">Descrição</label><input type="text" id="extraDesc" data-i18n-placeholder="extraDescPlaceholder" placeholder="ex: Freelance de design"></div>
+    <div class="full-row"><label data-i18n="extraAmountLabel">Valor</label><input type="number" id="extraAmount" min="0" step="0.01" placeholder="0.00"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="extraModalCancel" data-i18n="cancelBtn">Cancelar</button>
+      <button class="btn primary" id="extraModalSave" data-i18n="saveBtn">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   // ===== CONFIGURAÇÃO DO SUPABASE =====
@@ -518,7 +573,11 @@
       pdfTitlePrefix:'Relatório de ponto', pdfPeriod:'Período', pdfGeneratedAt:'Gerado em', pdfColDate:'Data', pdfColTimes:'Registros', pdfColWorked:'Trabalhado', pdfColBalance:'Saldo', pdfColEarned:'Ganho',
       xlsxSheetName:'Relatório', orDivider:'ou', googleLogin:'Continuar com Google',
       currencyLabel:'Moeda', converterTitle:'Conversor de moeda (câmbio em tempo real)', convertToLabel:'Converter para', convertBtn:'Converter',
-      convertResultPrefix:'Ganho no período convertido', convertRateLabel:'Câmbio', convertFailed:'Não foi possível buscar o câmbio agora. Tente novamente.'
+      convertResultPrefix:'Ganho no período convertido', convertRateLabel:'Câmbio', convertFailed:'Não foi possível buscar o câmbio agora. Tente novamente.',
+      extrasTitle:'Ganhos e gastos extras', extraIncomeTotal:'Ganhos extras', extraExpenseTotal:'Gastos', extraBalance:'Saldo extra', addExtra:'+ Adicionar lançamento',
+      extraTypeIncome:'Ganho', extraTypeExpense:'Gasto', extraDescLabel:'Descrição', extraDescPlaceholder:'ex: Freelance de design', extraAmountLabel:'Valor',
+      editExtra:'Editar lançamento', deleteExtra:'Excluir lançamento', emptyExtras:'Nenhum lançamento ainda.', confirmDeleteExtra:'Excluir esse lançamento?',
+      repExtraIncome:'Ganhos extras', repExtraExpense:'Gastos', repNetTotal:'Total líquido'
     },
     en: {
       eyebrow:'Work log', appTitle:'Time Card', logout:'Log out', today:'Today',
@@ -551,7 +610,11 @@
       pdfTitlePrefix:'Time report', pdfPeriod:'Period', pdfGeneratedAt:'Generated on', pdfColDate:'Date', pdfColTimes:'Log', pdfColWorked:'Worked', pdfColBalance:'Balance', pdfColEarned:'Earned',
       xlsxSheetName:'Report', orDivider:'or', googleLogin:'Continue with Google',
       currencyLabel:'Currency', converterTitle:'Currency converter (live rates)', convertToLabel:'Convert to', convertBtn:'Convert',
-      convertResultPrefix:'Period earnings converted', convertRateLabel:'Rate', convertFailed:'Could not fetch the exchange rate right now. Try again.'
+      convertResultPrefix:'Period earnings converted', convertRateLabel:'Rate', convertFailed:'Could not fetch the exchange rate right now. Try again.',
+      extrasTitle:'Extra income & expenses', extraIncomeTotal:'Extra income', extraExpenseTotal:'Expenses', extraBalance:'Extra balance', addExtra:'+ Add entry',
+      extraTypeIncome:'Income', extraTypeExpense:'Expense', extraDescLabel:'Description', extraDescPlaceholder:'e.g. Design freelance', extraAmountLabel:'Amount',
+      editExtra:'Edit entry', deleteExtra:'Delete entry', emptyExtras:'No entries yet.', confirmDeleteExtra:'Delete this entry?',
+      repExtraIncome:'Extra income', repExtraExpense:'Expenses', repNetTotal:'Net total'
     },
     es: {
       eyebrow:'Registro laboral', appTitle:'Tarjeta de Horario', logout:'Salir', today:'Hoy',
@@ -584,7 +647,11 @@
       pdfTitlePrefix:'Informe de horario', pdfPeriod:'Período', pdfGeneratedAt:'Generado el', pdfColDate:'Fecha', pdfColTimes:'Registros', pdfColWorked:'Trabajado', pdfColBalance:'Saldo', pdfColEarned:'Ganado',
       xlsxSheetName:'Informe', orDivider:'o', googleLogin:'Continuar con Google',
       currencyLabel:'Moneda', converterTitle:'Conversor de moneda (cambio en tiempo real)', convertToLabel:'Convertir a', convertBtn:'Convertir',
-      convertResultPrefix:'Ganancia del período convertida', convertRateLabel:'Cambio', convertFailed:'No se pudo obtener el cambio ahora. Inténtalo de nuevo.'
+      convertResultPrefix:'Ganancia del período convertida', convertRateLabel:'Cambio', convertFailed:'No se pudo obtener el cambio ahora. Inténtalo de nuevo.',
+      extrasTitle:'Ingresos y gastos extra', extraIncomeTotal:'Ingresos extra', extraExpenseTotal:'Gastos', extraBalance:'Saldo extra', addExtra:'+ Añadir registro',
+      extraTypeIncome:'Ingreso', extraTypeExpense:'Gasto', extraDescLabel:'Descripción', extraDescPlaceholder:'ej: Freelance de diseño', extraAmountLabel:'Monto',
+      editExtra:'Editar registro', deleteExtra:'Eliminar registro', emptyExtras:'Aún no hay registros.', confirmDeleteExtra:'¿Eliminar este registro?',
+      repExtraIncome:'Ingresos extra', repExtraExpense:'Gastos', repNetTotal:'Total neto'
     }
   };
 
@@ -659,7 +726,8 @@
         remindersEnabled:false,
         reminderTimes:{ entrada:'', saidaAlmoco:'', voltaAlmoco:'', saida:'' }
       },
-      entries:{}
+      entries:{},
+      extras:{} // { id: {date:'YYYY-MM-DD', type:'ganho'|'gasto', desc:'', amount:number} }
     };
   }
   function migrateSettings(settings){
@@ -799,13 +867,14 @@
     try{
       const { data, error } = await supabaseClient
         .from('ponto_dados')
-        .select('settings, entries')
+        .select('settings, entries, extras')
         .eq('user_id', currentUid)
         .maybeSingle();
       if(error) throw error;
       if(data){
         state.settings = migrateSettings(data.settings);
         state.entries = data.entries || {};
+        state.extras = data.extras || {};
       } else {
         state = defaultState();
         await saveData();
@@ -824,6 +893,7 @@
         user_id: currentUid,
         settings: state.settings,
         entries: state.entries,
+        extras: state.extras,
         updated_at: new Date().toISOString()
       });
       if(error) throw error;
@@ -1050,6 +1120,94 @@
     }));
   }
 
+  // ---------- ganhos e gastos extras ----------
+  let editingExtraId = null;
+
+  function extraTotals(extrasObj){
+    let ganhos = 0, gastos = 0;
+    Object.values(extrasObj).forEach(ex=>{
+      if(ex.type === 'ganho') ganhos += (ex.amount||0);
+      else gastos += (ex.amount||0);
+    });
+    return { ganhos, gastos, saldo: ganhos - gastos };
+  }
+
+  function renderExtras(){
+    const totals = extraTotals(state.extras || {});
+    document.getElementById('vExtraGanhos').textContent = formatCurrency(totals.ganhos);
+    document.getElementById('vExtraGastos').textContent = formatCurrency(totals.gastos);
+    document.getElementById('vExtraSaldo').textContent = formatCurrency(totals.saldo);
+    const box = document.getElementById('statExtraSaldo');
+    box.classList.remove('pos','neg');
+    if(totals.saldo > 0) box.classList.add('pos'); else if(totals.saldo < 0) box.classList.add('neg');
+
+    const listEl = document.getElementById('extrasList');
+    const ids = Object.keys(state.extras || {}).sort((a,b)=> (state.extras[b].date||'').localeCompare(state.extras[a].date||''));
+    if(ids.length === 0){
+      listEl.innerHTML = '<div class="empty-hist">'+t('emptyExtras')+'</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+    ids.forEach(id=>{
+      const ex = state.extras[id];
+      const d = dateKeyToDate(ex.date);
+      const row = document.createElement('div');
+      row.className = 'extra-row';
+      row.innerHTML = `
+        <div class="extra-left">
+          <div class="extra-date"><span class="wd">${WEEKDAYS()[d.getDay()]}</span><span class="dm">${pad(d.getDate())}/${pad(d.getMonth()+1)}</span></div>
+          <div class="extra-desc">${ex.desc || (ex.type==='ganho'?t('extraTypeIncome'):t('extraTypeExpense'))}</div>
+        </div>
+        <div class="extra-right">
+          <div class="extra-amount ${ex.type}">${ex.type==='gasto'?'-':'+'}${formatCurrency(ex.amount||0)}</div>
+          <div class="hist-actions">
+            <button class="icon-btn" data-extra-edit="${id}" aria-label="${t('editExtra')}">✎</button>
+            <button class="icon-btn" data-extra-del="${id}" aria-label="${t('deleteExtra')}">✕</button>
+          </div>
+        </div>`;
+      listEl.appendChild(row);
+    });
+    listEl.querySelectorAll('[data-extra-edit]').forEach(b=>b.addEventListener('click', ()=>openExtraModal(b.getAttribute('data-extra-edit'))));
+    listEl.querySelectorAll('[data-extra-del]').forEach(b=>b.addEventListener('click', ()=>{
+      if(!confirm(t('confirmDeleteExtra'))) return;
+      const id = b.getAttribute('data-extra-del');
+      delete state.extras[id];
+      saveData();
+      renderExtras();
+      runReport();
+    }));
+  }
+
+  function setExtraType(type){
+    document.getElementById('extraTypeGanho').classList.toggle('active', type==='ganho');
+    document.getElementById('extraTypeGasto').classList.toggle('active', type==='gasto');
+  }
+  function openExtraModal(id){
+    editingExtraId = id || null;
+    document.getElementById('extraModalTitle').textContent = id ? t('editExtra') : t('addExtra');
+    const ex = id ? state.extras[id] : null;
+    document.getElementById('extraDate').value = ex ? ex.date : todayKey();
+    document.getElementById('extraDesc').value = ex ? (ex.desc||'') : '';
+    document.getElementById('extraAmount').value = ex ? ex.amount : '';
+    setExtraType(ex ? ex.type : 'ganho');
+    document.getElementById('extraOverlay').classList.add('open');
+  }
+  function closeExtraModal(){ document.getElementById('extraOverlay').classList.remove('open'); editingExtraId = null; }
+  function saveExtraModal(){
+    const date = document.getElementById('extraDate').value || todayKey();
+    const desc = document.getElementById('extraDesc').value.trim();
+    const amount = parseFloat(document.getElementById('extraAmount').value);
+    if(isNaN(amount) || amount <= 0) return;
+    const type = document.getElementById('extraTypeGanho').classList.contains('active') ? 'ganho' : 'gasto';
+    const id = editingExtraId || ('ex_'+Date.now()+'_'+Math.random().toString(36).slice(2,7));
+    if(!state.extras) state.extras = {};
+    state.extras[id] = { date, type, desc, amount };
+    saveData();
+    closeExtraModal();
+    renderExtras();
+    runReport();
+  }
+
   function openModal(key){
     editingDate = key || todayKey();
     document.getElementById('modalTitle').textContent = key ? t('modalEditTitle') : t('modalAddTitle');
@@ -1101,7 +1259,7 @@
   }
 
 
-  function renderAll(){ renderPunchCard(); renderSummary(); renderSettings(); renderHistory(); }
+  function renderAll(){ renderPunchCard(); renderSummary(); renderSettings(); renderHistory(); renderExtras(); }
 
   // ---------- relatórios (por mês / por período) ----------
   function keyFromDate(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
@@ -1163,13 +1321,28 @@
     }
     const saldoTotal = workedTotal - expectedTotal;
     const ganhoTotal = earningsForMinutes(workedTotal);
-    lastReport = { startKey, endKey, workedTotal, expectedTotal, saldoTotal, ganhoTotal, diasRegistrados, rows };
+
+    const extraIds = Object.keys(state.extras||{}).filter(id=>{
+      const d = state.extras[id].date;
+      return d >= startKey && d <= endKey;
+    });
+    let extraGanhos = 0, extraGastos = 0;
+    extraIds.forEach(id=>{
+      const ex = state.extras[id];
+      if(ex.type==='ganho') extraGanhos += (ex.amount||0); else extraGastos += (ex.amount||0);
+    });
+    const netTotal = ganhoTotal + extraGanhos - extraGastos;
+
+    lastReport = { startKey, endKey, workedTotal, expectedTotal, saldoTotal, ganhoTotal, diasRegistrados, rows, extraGanhos, extraGastos, netTotal, extraIds };
 
     setRepStat('repTrabalhado', workedTotal);
     setRepStat('repEsperado', expectedTotal);
     setRepStat('repSaldo', saldoTotal);
     document.getElementById('repDias').textContent = diasRegistrados;
     document.getElementById('repGanho').textContent = formatCurrency(ganhoTotal);
+    document.getElementById('repExtraGanho').textContent = formatCurrency(extraGanhos);
+    document.getElementById('repExtraGasto').textContent = formatCurrency(extraGastos);
+    document.getElementById('repNetTotal').textContent = formatCurrency(netTotal);
     const saldoBox = document.getElementById('repStatSaldo');
     saldoBox.classList.remove('pos','neg');
     if(saldoTotal > 0) saldoBox.classList.add('pos'); else if(saldoTotal < 0) saldoBox.classList.add('neg');
@@ -1253,6 +1426,7 @@
     doc.text(`${t('pdfPeriod')}: ${lastReport.startKey} — ${lastReport.endKey}`, 14, 23);
     doc.text(`${t('pdfGeneratedAt')}: ${new Date().toLocaleString(LOCALE_MAP[currentLang])}`, 14, 28);
     doc.text(`${t('repWorked')}: ${minutesToLabel(lastReport.workedTotal)}   ${t('repExpected')}: ${minutesToLabel(lastReport.expectedTotal)}   ${t('repBalance')}: ${minutesToLabel(lastReport.saldoTotal)}   ${t('repEarned')}: ${formatCurrency(lastReport.ganhoTotal)}`, 14, 35);
+    doc.text(`${t('repExtraIncome')}: ${formatCurrency(lastReport.extraGanhos)}   ${t('repExtraExpense')}: ${formatCurrency(lastReport.extraGastos)}   ${t('repNetTotal')}: ${formatCurrency(lastReport.netTotal)}`, 14, 41);
 
     const body = lastReport.rows.map(key=>{
       const entry = state.entries[key];
@@ -1266,12 +1440,34 @@
       ];
     });
     doc.autoTable({
-      startY: 42,
+      startY: 48,
       head: [[t('pdfColDate'), t('pdfColTimes'), t('pdfColWorked'), t('pdfColBalance'), t('pdfColEarned')]],
       body,
       styles: { fontSize: 8 },
       headStyles: { fillColor: [232,163,61], textColor: [27,34,44] }
     });
+
+    if(lastReport.extraIds && lastReport.extraIds.length){
+      const extraBody = lastReport.extraIds
+        .sort((a,b)=> state.extras[a].date.localeCompare(state.extras[b].date))
+        .map(id=>{
+          const ex = state.extras[id];
+          const d = dateKeyToDate(ex.date);
+          return [
+            pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear(),
+            ex.type==='ganho' ? t('extraTypeIncome') : t('extraTypeExpense'),
+            ex.desc || '',
+            (ex.type==='gasto'?'-':'+') + formatCurrency(ex.amount||0)
+          ];
+        });
+      doc.autoTable({
+        startY: doc.lastAutoTable.finalY + 8,
+        head: [[t('pdfColDate'), t('extraTypeIncome')+'/'+t('extraTypeExpense'), t('extraDescLabel'), t('extraAmountLabel')]],
+        body: extraBody,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [79,176,165], textColor: [18,33,31] }
+      });
+    }
     doc.save(`ponto_${lastReport.startKey}_${lastReport.endKey}.pdf`);
   }
 
@@ -1289,9 +1485,27 @@
         formatCurrency(earningsForMinutes(workedMinutes(entry)))
       ];
     });
-    const ws = XLSX.utils.aoa_to_sheet([header, ...body]);
     const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([header, ...body]);
     XLSX.utils.book_append_sheet(wb, ws, t('xlsxSheetName'));
+
+    if(lastReport.extraIds && lastReport.extraIds.length){
+      const extraHeader = [t('pdfColDate'), t('extraTypeIncome')+'/'+t('extraTypeExpense'), t('extraDescLabel'), t('extraAmountLabel')];
+      const extraBody = lastReport.extraIds
+        .sort((a,b)=> state.extras[a].date.localeCompare(state.extras[b].date))
+        .map(id=>{
+          const ex = state.extras[id];
+          const d = dateKeyToDate(ex.date);
+          return [
+            pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear(),
+            ex.type==='ganho' ? t('extraTypeIncome') : t('extraTypeExpense'),
+            ex.desc || '',
+            (ex.type==='gasto'?-1:1) * (ex.amount||0)
+          ];
+        });
+      const ws2 = XLSX.utils.aoa_to_sheet([extraHeader, ...extraBody]);
+      XLSX.utils.book_append_sheet(wb, ws2, t('extrasTitle').slice(0,31));
+    }
     XLSX.writeFile(wb, `ponto_${lastReport.startKey}_${lastReport.endKey}.xlsx`);
   }
 
@@ -1392,6 +1606,18 @@
   document.getElementById('modeManual').addEventListener('click', ()=>setMode('manual'));
   document.getElementById('modeAbono').addEventListener('click', ()=>setMode('abono'));
   document.getElementById('overlay').addEventListener('click', (e)=>{ if(e.target.id==='overlay') closeModal(); });
+
+  document.getElementById('addExtraBtn').addEventListener('click', ()=>openExtraModal(null));
+  document.getElementById('extraModalCancel').addEventListener('click', closeExtraModal);
+  document.getElementById('extraModalSave').addEventListener('click', saveExtraModal);
+  document.getElementById('extraTypeGanho').addEventListener('click', ()=>setExtraType('ganho'));
+  document.getElementById('extraTypeGasto').addEventListener('click', ()=>setExtraType('gasto'));
+  document.getElementById('extraOverlay').addEventListener('click', (e)=>{ if(e.target.id==='extraOverlay') closeExtraModal(); });
+  document.getElementById('extrasHead').addEventListener('click', ()=>{
+    document.getElementById('extrasBody').classList.toggle('open');
+    document.getElementById('extrasChev').classList.toggle('open');
+  });
+
   document.getElementById('settingsHead').addEventListener('click', ()=>{
     document.getElementById('settingsBody').classList.toggle('open');
     document.getElementById('settingsChev').classList.toggle('open');
