@@ -328,8 +328,12 @@
       <div class="subsection-title" data-i18n="workDaysLabel" style="margin-top:12px;">Dias de trabalho</div>
       <div id="daysTable"></div>
       <div class="field-row" style="margin-top:14px;">
-        <label for="hourlyRate" data-i18n="hourlyRateLabel">Valor da hora (R$)</label>
+        <label for="hourlyRate" data-i18n="hourlyRateLabel">Valor da hora</label>
         <input type="number" id="hourlyRate" min="0" step="0.01" value="0">
+      </div>
+      <div class="field-row">
+        <label for="currencySelect" data-i18n="currencyLabel">Moeda</label>
+        <select id="currencySelect"></select>
       </div>
       <button class="save-settings" id="saveSettingsBtn" data-i18n="saveRoutine">Salvar rotina</button>
 
@@ -406,6 +410,15 @@
       <div class="chart-wrap">
         <div class="chart-title" data-i18n="chartBalanceTitle">Evolução do banco de horas</div>
         <canvas id="chartBalance"></canvas>
+      </div>
+
+      <div class="chart-wrap">
+        <div class="chart-title" data-i18n="converterTitle">Conversor de moeda (câmbio em tempo real)</div>
+        <div class="add-holiday-row" style="grid-template-columns:1fr auto;">
+          <div><label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;" data-i18n="convertToLabel">Converter para</label><select id="convertToSelect"></select></div>
+          <button class="save-settings" id="convertBtn" data-i18n="convertBtn">Converter</button>
+        </div>
+        <div id="convertResult" style="margin-top:12px;font-size:13px;color:var(--text-muted);"></div>
       </div>
     </div>
   </section>
@@ -501,7 +514,9 @@
       exportPdf:'Exportar PDF', exportXlsx:'Exportar Excel',
       chartWorkedTitle:'Horas trabalhadas no período', chartBalanceTitle:'Evolução do banco de horas',
       pdfTitlePrefix:'Relatório de ponto', pdfPeriod:'Período', pdfGeneratedAt:'Gerado em', pdfColDate:'Data', pdfColTimes:'Registros', pdfColWorked:'Trabalhado', pdfColBalance:'Saldo', pdfColEarned:'Ganho',
-      xlsxSheetName:'Relatório', orDivider:'ou', googleLogin:'Continuar com Google'
+      xlsxSheetName:'Relatório', orDivider:'ou', googleLogin:'Continuar com Google',
+      currencyLabel:'Moeda', converterTitle:'Conversor de moeda (câmbio em tempo real)', convertToLabel:'Converter para', convertBtn:'Converter',
+      convertResultPrefix:'Ganho no período convertido', convertRateLabel:'Câmbio', convertFailed:'Não foi possível buscar o câmbio agora. Tente novamente.'
     },
     en: {
       eyebrow:'Work log', appTitle:'Time Card', logout:'Log out', today:'Today',
@@ -532,7 +547,9 @@
       exportPdf:'Export PDF', exportXlsx:'Export Excel',
       chartWorkedTitle:'Hours worked in period', chartBalanceTitle:'Hours bank over time',
       pdfTitlePrefix:'Time report', pdfPeriod:'Period', pdfGeneratedAt:'Generated on', pdfColDate:'Date', pdfColTimes:'Log', pdfColWorked:'Worked', pdfColBalance:'Balance', pdfColEarned:'Earned',
-      xlsxSheetName:'Report', orDivider:'or', googleLogin:'Continue with Google'
+      xlsxSheetName:'Report', orDivider:'or', googleLogin:'Continue with Google',
+      currencyLabel:'Currency', converterTitle:'Currency converter (live rates)', convertToLabel:'Convert to', convertBtn:'Convert',
+      convertResultPrefix:'Period earnings converted', convertRateLabel:'Rate', convertFailed:'Could not fetch the exchange rate right now. Try again.'
     },
     es: {
       eyebrow:'Registro laboral', appTitle:'Tarjeta de Horario', logout:'Salir', today:'Hoy',
@@ -563,7 +580,9 @@
       exportPdf:'Exportar PDF', exportXlsx:'Exportar Excel',
       chartWorkedTitle:'Horas trabajadas en el período', chartBalanceTitle:'Evolución del banco de horas',
       pdfTitlePrefix:'Informe de horario', pdfPeriod:'Período', pdfGeneratedAt:'Generado el', pdfColDate:'Fecha', pdfColTimes:'Registros', pdfColWorked:'Trabajado', pdfColBalance:'Saldo', pdfColEarned:'Ganado',
-      xlsxSheetName:'Informe', orDivider:'o', googleLogin:'Continuar con Google'
+      xlsxSheetName:'Informe', orDivider:'o', googleLogin:'Continuar con Google',
+      currencyLabel:'Moneda', converterTitle:'Conversor de moneda (cambio en tiempo real)', convertToLabel:'Convertir a', convertBtn:'Convertir',
+      convertResultPrefix:'Ganancia del período convertida', convertRateLabel:'Cambio', convertFailed:'No se pudo obtener el cambio ahora. Inténtalo de nuevo.'
     }
   };
 
@@ -621,11 +640,14 @@
   function SLOT_LABEL(k){ return SLOT_LABELS_MAP[currentLang][k]; }
   const SLOT_KEYS = ['entrada','saidaAlmoco','voltaAlmoco','saida'];
 
+  const CURRENCIES = ['BRL','USD','EUR','PLN','GBP','JPY','CNY','CAD','AUD','CHF','MXN','INR','ZAR','SEK','NOK','DKK','HUF','CZK','TRY','KRW','SGD','HKD','NZD','THB','ILS','RON','BGN','IDR','MYR','PHP'];
+
   function defaultState(){
     return {
       settings:{
         hoursPerDay:{0:0,1:8,2:8,3:8,4:8,5:8,6:0},
         hourlyRate:0,
+        currency:'BRL',
         customHolidays:[], // [{date:'YYYY-MM-DD', name:'...'}]
         remindersEnabled:false,
         reminderTimes:{ entrada:'', saidaAlmoco:'', voltaAlmoco:'', saida:'' }
@@ -643,6 +665,7 @@
       workDays.forEach(d=>{ hpd[d] = dailyHours; });
       s.hoursPerDay = hpd;
     }
+    if(!CURRENCIES.includes(s.currency)) s.currency = 'BRL';
     return s;
   }
   let state = defaultState();
@@ -665,8 +688,19 @@
     const rate = state.settings.hourlyRate || 0;
     return (mins/60) * rate;
   }
-  function formatCurrency(val){
-    return 'R$ ' + (val||0).toLocaleString(LOCALE_MAP[currentLang], { minimumFractionDigits:2, maximumFractionDigits:2 });
+  function formatCurrency(val, code){
+    const currency = code || state.settings.currency || 'BRL';
+    try{
+      return new Intl.NumberFormat(LOCALE_MAP[currentLang], { style:'currency', currency }).format(val||0);
+    }catch(e){
+      return currency + ' ' + (val||0).toFixed(2);
+    }
+  }
+  async function fetchExchangeRate(from, to){
+    const res = await fetch(`https://api.frankfurter.app/latest?amount=1&from=${from}&to=${to}`);
+    if(!res.ok) throw new Error('rate fetch failed');
+    const data = await res.json();
+    return data.rates[to];
   }
 
   // ---------- feriados (nacionais calculados + personalizados) ----------
@@ -904,6 +938,8 @@
       table.appendChild(row);
     });
     document.getElementById('hourlyRate').value = state.settings.hourlyRate || 0;
+    populateCurrencySelects();
+    document.getElementById('currencySelect').value = state.settings.currency || 'BRL';
     renderHolidayList();
     document.getElementById('remindersToggle').classList.toggle('on', !!state.settings.remindersEnabled);
     const rt = state.settings.reminderTimes || {};
@@ -1241,6 +1277,43 @@
     XLSX.writeFile(wb, `ponto_${lastReport.startKey}_${lastReport.endKey}.xlsx`);
   }
 
+  // ---------- moeda e conversor com câmbio ao vivo ----------
+  function populateCurrencySelects(){
+    [document.getElementById('currencySelect'), document.getElementById('convertToSelect')].forEach(sel=>{
+      if(!sel || sel.options.length) return;
+      CURRENCIES.forEach(code=>{
+        const opt = document.createElement('option');
+        opt.value = code;
+        opt.textContent = code;
+        sel.appendChild(opt);
+      });
+    });
+    const convertTo = document.getElementById('convertToSelect');
+    if(convertTo && !convertTo.dataset.inited){
+      convertTo.value = convertTo.querySelector(`option[value="${state.settings.currency==='USD'?'EUR':'USD'}"]`) ? (state.settings.currency==='USD'?'EUR':'USD') : 'USD';
+      convertTo.dataset.inited = '1';
+    }
+  }
+
+  async function runConversion(){
+    if(!lastReport) return;
+    const resultEl = document.getElementById('convertResult');
+    const from = state.settings.currency || 'BRL';
+    const to = document.getElementById('convertToSelect').value;
+    if(from === to){
+      resultEl.textContent = formatCurrency(lastReport.ganhoTotal, from);
+      return;
+    }
+    resultEl.textContent = '…';
+    try{
+      const rate = await fetchExchangeRate(from, to);
+      const converted = lastReport.ganhoTotal * rate;
+      resultEl.innerHTML = `${t('convertResultPrefix')}: <b>${formatCurrency(converted, to)}</b><br><span style="font-size:11px;">${t('convertRateLabel')}: 1 ${from} = ${rate.toFixed(4)} ${to}</span>`;
+    }catch(e){
+      resultEl.textContent = t('convertFailed');
+    }
+  }
+
   // ---------- lembretes (Notification API — funciona com o app aberto/em segundo plano) ----------
   function setupReminders(){
     if(reminderInterval){ clearInterval(reminderInterval); reminderInterval = null; }
@@ -1284,6 +1357,7 @@
     document.getElementById('repSearchBtn').addEventListener('click', runReport);
     document.getElementById('exportPdfBtn').addEventListener('click', exportPdf);
     document.getElementById('exportXlsxBtn').addEventListener('click', exportXlsx);
+    document.getElementById('convertBtn').addEventListener('click', runConversion);
   }
 
 
@@ -1303,6 +1377,7 @@
     state.settings.hoursPerDay = readHoursPerDayFromUI();
     const rate = parseFloat(document.getElementById('hourlyRate').value);
     state.settings.hourlyRate = isNaN(rate) ? 0 : rate;
+    state.settings.currency = document.getElementById('currencySelect').value || 'BRL';
     saveData();
     renderAll();
     runReport();
