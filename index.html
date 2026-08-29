@@ -144,6 +144,11 @@
 
   .footer-note{text-align:center;font-size:11px;color:var(--text-muted);margin-top:18px;}
   .footer-note button{background:none;border:none;color:var(--coral);text-decoration:underline;cursor:pointer;font-size:11px;padding:0;}
+  .sync-badge{font-weight:600;}
+  .sync-badge.synced{color:var(--teal);}
+  .sync-badge.syncing{color:var(--amber);}
+  .sync-badge.offline,.sync-badge.error{color:var(--coral);}
+  .sync-badge.idle{color:var(--text-muted);}
 
   /* ---------- login / cadastro ---------- */
   .loading-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:13px;}
@@ -463,7 +468,7 @@
     </div>
   </section>
 
-  <div class="footer-note"><span data-i18n="footerSynced">Dados sincronizados na nuvem</span> · <button id="resetBtn" data-i18n="deleteAllData">apagar todos os dados</button></div>
+  <div class="footer-note"><span id="syncBadge" class="sync-badge idle">·</span> · <button id="resetBtn" data-i18n="deleteAllData">apagar todos os dados</button></div>
 
 </div>
 
@@ -577,7 +582,8 @@
       extrasTitle:'Ganhos e gastos extras', extraIncomeTotal:'Ganhos extras', extraExpenseTotal:'Gastos', extraBalance:'Saldo extra', addExtra:'+ Adicionar lançamento',
       extraTypeIncome:'Ganho', extraTypeExpense:'Gasto', extraDescLabel:'Descrição', extraDescPlaceholder:'ex: Freelance de design', extraAmountLabel:'Valor',
       editExtra:'Editar lançamento', deleteExtra:'Excluir lançamento', emptyExtras:'Nenhum lançamento ainda.', confirmDeleteExtra:'Excluir esse lançamento?',
-      repExtraIncome:'Ganhos extras', repExtraExpense:'Gastos', repNetTotal:'Total líquido'
+      repExtraIncome:'Ganhos extras', repExtraExpense:'Gastos', repNetTotal:'Total líquido',
+      syncStatus_idle:'', syncStatus_syncing:'Sincronizando…', syncStatus_synced:'Sincronizado com a nuvem', syncStatus_offline:'Offline — alterações salvas neste aparelho', syncStatus_error:'Erro ao sincronizar'
     },
     en: {
       eyebrow:'Work log', appTitle:'Time Card', logout:'Log out', today:'Today',
@@ -614,7 +620,8 @@
       extrasTitle:'Extra income & expenses', extraIncomeTotal:'Extra income', extraExpenseTotal:'Expenses', extraBalance:'Extra balance', addExtra:'+ Add entry',
       extraTypeIncome:'Income', extraTypeExpense:'Expense', extraDescLabel:'Description', extraDescPlaceholder:'e.g. Design freelance', extraAmountLabel:'Amount',
       editExtra:'Edit entry', deleteExtra:'Delete entry', emptyExtras:'No entries yet.', confirmDeleteExtra:'Delete this entry?',
-      repExtraIncome:'Extra income', repExtraExpense:'Expenses', repNetTotal:'Net total'
+      repExtraIncome:'Extra income', repExtraExpense:'Expenses', repNetTotal:'Net total',
+      syncStatus_idle:'', syncStatus_syncing:'Syncing…', syncStatus_synced:'Synced to the cloud', syncStatus_offline:'Offline — changes saved on this device', syncStatus_error:'Sync error'
     },
     es: {
       eyebrow:'Registro laboral', appTitle:'Tarjeta de Horario', logout:'Salir', today:'Hoy',
@@ -651,7 +658,8 @@
       extrasTitle:'Ingresos y gastos extra', extraIncomeTotal:'Ingresos extra', extraExpenseTotal:'Gastos', extraBalance:'Saldo extra', addExtra:'+ Añadir registro',
       extraTypeIncome:'Ingreso', extraTypeExpense:'Gasto', extraDescLabel:'Descripción', extraDescPlaceholder:'ej: Freelance de diseño', extraAmountLabel:'Monto',
       editExtra:'Editar registro', deleteExtra:'Eliminar registro', emptyExtras:'Aún no hay registros.', confirmDeleteExtra:'¿Eliminar este registro?',
-      repExtraIncome:'Ingresos extra', repExtraExpense:'Gastos', repNetTotal:'Total neto'
+      repExtraIncome:'Ingresos extra', repExtraExpense:'Gastos', repNetTotal:'Total neto',
+      syncStatus_idle:'', syncStatus_syncing:'Sincronizando…', syncStatus_synced:'Sincronizado con la nube', syncStatus_offline:'Sin conexión — cambios guardados en este dispositivo', syncStatus_error:'Error al sincronizar'
     }
   };
 
@@ -699,6 +707,7 @@
     currentLang = lang;
     localStorage.setItem('ponto-lang', lang);
     applyI18n();
+    setSyncStatus(syncStatus);
     if(document.getElementById('appRoot').style.display !== 'none'){
       renderAll();
       runReport();
@@ -724,10 +733,12 @@
         currency:'BRL',
         customHolidays:[], // [{date:'YYYY-MM-DD', name:'...'}]
         remindersEnabled:false,
-        reminderTimes:{ entrada:'', saidaAlmoco:'', voltaAlmoco:'', saida:'' }
+        reminderTimes:{ entrada:'', saidaAlmoco:'', voltaAlmoco:'', saida:'' },
+        _u:0
       },
       entries:{},
-      extras:{} // { id: {date:'YYYY-MM-DD', type:'ganho'|'gasto', desc:'', amount:number} }
+      extras:{}, // { id: {date:'YYYY-MM-DD', type:'ganho'|'gasto', desc:'', amount:number, _u:timestamp} }
+      tombstones:{ entries:{}, extras:{} } // registra exclusões com timestamp, pra sincronizar corretamente
     };
   }
   function migrateSettings(settings){
@@ -862,45 +873,140 @@
 
 
 
-  // ---------- armazenamento (tabela ponto_dados no Supabase/Postgres) ----------
-  async function loadData(){
+  // ---------- armazenamento local-first: cache no aparelho + sincronização em segundo plano ----------
+  let syncStatus = 'idle'; // idle | syncing | synced | offline | error
+  let scheduledSyncTimer = null;
+  let periodicRetryTimer = null;
+
+  function localKey(){ return 'ponto-cache-'+currentUid; }
+  function saveLocalCache(){
+    try{ localStorage.setItem(localKey(), JSON.stringify(state)); }catch(e){ console.error('Falha ao salvar cache local', e); }
+  }
+  function loadLocalCache(){
     try{
-      const { data, error } = await supabaseClient
-        .from('ponto_dados')
-        .select('settings, entries, extras')
-        .eq('user_id', currentUid)
-        .maybeSingle();
-      if(error) throw error;
-      if(data){
-        state.settings = migrateSettings(data.settings);
-        state.entries = data.entries || {};
-        state.extras = data.extras || {};
-      } else {
-        state = defaultState();
-        await saveData();
+      const raw = localStorage.getItem(localKey());
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  }
+
+  function setSyncStatus(s){
+    syncStatus = s;
+    const el = document.getElementById('syncBadge');
+    if(!el) return;
+    el.className = 'sync-badge ' + s;
+    el.textContent = t('syncStatus_'+s);
+  }
+
+  // merge por registro: quem tiver o timestamp _u mais recente vence; exclusões usam "lápide" (tombstone)
+  function mergeRecordMaps(localMap, remoteMap, localTomb, remoteTomb){
+    localMap = localMap||{}; remoteMap = remoteMap||{}; localTomb = localTomb||{}; remoteTomb = remoteTomb||{};
+    const result = {};
+    const allKeys = new Set([...Object.keys(localMap), ...Object.keys(remoteMap)]);
+    allKeys.forEach(k=>{
+      const l = localMap[k], r = remoteMap[k];
+      const lDelTs = localTomb[k] || 0, rDelTs = remoteTomb[k] || 0;
+      const lTs = l ? (l._u||0) : lDelTs;
+      const rTs = r ? (r._u||0) : rDelTs;
+      if(lTs >= rTs){ if(l) result[k] = l; } else { if(r) result[k] = r; }
+    });
+    return result;
+  }
+  function mergeTombstones(a, b){
+    const out = Object.assign({}, a||{});
+    Object.keys(b||{}).forEach(k=>{ if(!out[k] || b[k]>out[k]) out[k]=b[k]; });
+    return out;
+  }
+  function mergeAll(local, remote){
+    const lTomb = local.tombstones || {entries:{},extras:{}};
+    const rTomb = remote.tombstones || {entries:{},extras:{}};
+    const merged = {
+      entries: mergeRecordMaps(local.entries, remote.entries, lTomb.entries, rTomb.entries),
+      extras: mergeRecordMaps(local.extras, remote.extras, lTomb.extras, rTomb.extras),
+      tombstones: { entries: mergeTombstones(lTomb.entries, rTomb.entries), extras: mergeTombstones(lTomb.extras, rTomb.extras) }
+    };
+    const lS = local.settings||{}, rS = remote.settings||{};
+    merged.settings = ((lS._u||0) >= (rS._u||0)) ? lS : rS;
+    return merged;
+  }
+
+  async function fetchRemote(){
+    const { data, error } = await supabaseClient
+      .from('ponto_dados')
+      .select('settings, entries, extras, tombstones')
+      .eq('user_id', currentUid)
+      .maybeSingle();
+    if(error) throw error;
+    return data;
+  }
+  async function pushRemote(){
+    const { error } = await supabaseClient.from('ponto_dados').upsert({
+      user_id: currentUid,
+      settings: state.settings,
+      entries: state.entries,
+      extras: state.extras,
+      tombstones: state.tombstones,
+      updated_at: new Date().toISOString()
+    });
+    if(error) throw error;
+  }
+
+  async function trySync(){
+    if(!currentUid) return;
+    if(!navigator.onLine){ setSyncStatus('offline'); return; }
+    setSyncStatus('syncing');
+    try{
+      const remote = await fetchRemote();
+      if(remote){
+        const merged = mergeAll(state, remote);
+        state.entries = merged.entries;
+        state.extras = merged.extras;
+        state.tombstones = merged.tombstones;
+        state.settings = migrateSettings(merged.settings);
       }
+      await pushRemote();
+      saveLocalCache();
+      renderAll();
+      runReport();
+      setSyncStatus('synced');
     }catch(e){
-      console.error('Falha ao carregar dados da nuvem', e);
-      alert(t('loadFailAlert'));
+      console.error('Falha ao sincronizar', e);
+      setSyncStatus('offline');
+    }
+  }
+  function scheduleSync(){
+    if(scheduledSyncTimer) clearTimeout(scheduledSyncTimer);
+    scheduledSyncTimer = setTimeout(trySync, 900);
+  }
+
+  async function loadData(){
+    const cached = loadLocalCache();
+    if(cached){
+      state.settings = migrateSettings(cached.settings);
+      state.entries = cached.entries || {};
+      state.extras = cached.extras || {};
+      state.tombstones = cached.tombstones || {entries:{},extras:{}};
     }
     renderAll();
     setupReminders();
+    await trySync();
   }
+  // saveData: grava local imediatamente (funciona offline) e agenda sincronização com a nuvem
   async function saveData(){
-    if(!currentUid) return;
-    try{
-      const { error } = await supabaseClient.from('ponto_dados').upsert({
-        user_id: currentUid,
-        settings: state.settings,
-        entries: state.entries,
-        extras: state.extras,
-        updated_at: new Date().toISOString()
-      });
-      if(error) throw error;
-    }catch(e){
-      console.error('Falha ao salvar dados na nuvem', e);
-      alert(t('saveFailAlert'));
-    }
+    saveLocalCache();
+    scheduleSync();
+  }
+
+  function deleteEntryLocal(key){
+    delete state.entries[key];
+    if(!state.tombstones) state.tombstones = {entries:{},extras:{}};
+    state.tombstones.entries[key] = Date.now();
+    saveData();
+  }
+  function deleteExtraLocal(id){
+    delete state.extras[id];
+    if(!state.tombstones) state.tombstones = {entries:{},extras:{}};
+    state.tombstones.extras[id] = Date.now();
+    saveData();
   }
 
   function tickClock(){
@@ -949,6 +1055,7 @@
       const v = input.value;
       if(!state.entries[key]) state.entries[key] = { entrada:null, saidaAlmoco:null, voltaAlmoco:null, saida:null, manualMinutes:null };
       state.entries[key][slotKey] = v || null;
+      state.entries[key]._u = Date.now();
       saveData();
       renderAll();
     }
@@ -965,6 +1072,7 @@
     if(!nextEmpty) return;
     const d = new Date();
     entry[nextEmpty] = pad(d.getHours())+':'+pad(d.getMinutes());
+    entry._u = Date.now();
     saveData();
     renderPunchCard(nextEmpty);
     renderSummary();
@@ -1066,6 +1174,7 @@
         delBtn.textContent = '✕';
         delBtn.addEventListener('click', ()=>{
           state.settings.customHolidays = state.settings.customHolidays.filter(c=> !(c.date===h.date && c.name===h.name));
+          state.settings._u = Date.now();
           saveData();
           renderHolidayList();
           renderAll();
@@ -1113,8 +1222,7 @@
     listEl.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', ()=>openModal(b.getAttribute('data-edit'))));
     listEl.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', ()=>{
       const key = b.getAttribute('data-del');
-      delete state.entries[key];
-      saveData();
+      deleteEntryLocal(key);
       renderAll();
       runReport();
     }));
@@ -1171,8 +1279,7 @@
     listEl.querySelectorAll('[data-extra-del]').forEach(b=>b.addEventListener('click', ()=>{
       if(!confirm(t('confirmDeleteExtra'))) return;
       const id = b.getAttribute('data-extra-del');
-      delete state.extras[id];
-      saveData();
+      deleteExtraLocal(id);
       renderExtras();
       runReport();
     }));
@@ -1201,7 +1308,7 @@
     const type = document.getElementById('extraTypeGanho').classList.contains('active') ? 'ganho' : 'gasto';
     const id = editingExtraId || ('ex_'+Date.now()+'_'+Math.random().toString(36).slice(2,7));
     if(!state.extras) state.extras = {};
-    state.extras[id] = { date, type, desc, amount };
+    state.extras[id] = { date, type, desc, amount, _u: Date.now() };
     saveData();
     closeExtraModal();
     renderExtras();
@@ -1239,17 +1346,17 @@
     const isManual = document.getElementById('modeManual').classList.contains('active');
     const isAbonoMode = document.getElementById('modeAbono').classList.contains('active');
     if(isAbonoMode){
-      state.entries[key] = { entrada:null, saidaAlmoco:null, voltaAlmoco:null, saida:null, manualMinutes:null, type:'abono', reason: document.getElementById('mAbonoReason').value || '' };
+      state.entries[key] = { entrada:null, saidaAlmoco:null, voltaAlmoco:null, saida:null, manualMinutes:null, type:'abono', reason: document.getElementById('mAbonoReason').value || '', _u: Date.now() };
     } else if(isManual){
       const hrs = parseFloat(document.getElementById('mManual').value);
-      state.entries[key] = { entrada:null, saidaAlmoco:null, voltaAlmoco:null, saida:null, manualMinutes: isNaN(hrs)?0:Math.round(hrs*60), type:null };
+      state.entries[key] = { entrada:null, saidaAlmoco:null, voltaAlmoco:null, saida:null, manualMinutes: isNaN(hrs)?0:Math.round(hrs*60), type:null, _u: Date.now() };
     } else {
       state.entries[key] = {
         entrada: document.getElementById('mEntrada').value || null,
         saidaAlmoco: document.getElementById('mSaidaAlmoco').value || null,
         voltaAlmoco: document.getElementById('mVoltaAlmoco').value || null,
         saida: document.getElementById('mSaida').value || null,
-        manualMinutes: null, type:null
+        manualMinutes: null, type:null, _u: Date.now()
       };
     }
     saveData();
@@ -1627,6 +1734,7 @@
     const rate = parseFloat(document.getElementById('hourlyRate').value);
     state.settings.hourlyRate = isNaN(rate) ? 0 : rate;
     state.settings.currency = document.getElementById('currencySelect').value || 'BRL';
+    state.settings._u = Date.now();
     saveData();
     renderAll();
     runReport();
@@ -1637,6 +1745,7 @@
     if(!date || !name) return;
     state.settings.customHolidays = state.settings.customHolidays || [];
     state.settings.customHolidays.push({ date, name });
+    state.settings._u = Date.now();
     document.getElementById('newHolidayDate').value = '';
     document.getElementById('newHolidayName').value = '';
     saveData();
@@ -1655,12 +1764,21 @@
       voltaAlmoco: document.getElementById('remVoltaAlmoco').value || '',
       saida: document.getElementById('remSaida').value || ''
     };
+    state.settings._u = Date.now();
     saveData();
     setupReminders();
   });
   document.getElementById('resetBtn').addEventListener('click', async ()=>{
     if(confirm(t('confirmDeleteAll'))){
-      state = defaultState();
+      const now = Date.now();
+      if(!state.tombstones) state.tombstones = {entries:{},extras:{}};
+      Object.keys(state.entries||{}).forEach(k=>{ state.tombstones.entries[k] = now; });
+      Object.keys(state.extras||{}).forEach(k=>{ state.tombstones.extras[k] = now; });
+      const freshSettings = defaultState().settings;
+      freshSettings._u = now;
+      state.settings = freshSettings;
+      state.entries = {};
+      state.extras = {};
       await saveData();
       renderAll();
       runReport();
@@ -1766,6 +1884,13 @@
       navigator.serviceWorker.register('service-worker.js').catch(()=>{});
     });
   }
+
+  window.addEventListener('online', ()=>{ if(currentUid) trySync(); });
+  window.addEventListener('offline', ()=> setSyncStatus('offline'));
+  if(periodicRetryTimer) clearInterval(periodicRetryTimer);
+  periodicRetryTimer = setInterval(()=>{
+    if(currentUid && navigator.onLine && (syncStatus==='offline' || syncStatus==='error')) trySync();
+  }, 25000);
 
   supabaseClient.auth.onAuthStateChange(async (event, session)=>{
     document.getElementById('loadingScreen').style.display = 'none';
