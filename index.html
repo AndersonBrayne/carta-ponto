@@ -528,22 +528,31 @@
   let currentUid = null;
 
   // ===== IDIOMAS =====
-  const SUPPORTED_LANGS = ['pt','en','es'];
-  const LOCALE_MAP = { pt:'pt-BR', en:'en-US', es:'es-ES' };
+  const SUPPORTED_LANGS = ['pt','en','es','pl','uk','ru'];
+  const LOCALE_MAP = { pt:'pt-BR', en:'en-US', es:'es-ES', pl:'pl-PL', uk:'uk-UA', ru:'ru-RU' };
   const WEEKDAYS_MAP = {
     pt: ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],
     en: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
-    es: ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
+    es: ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'],
+    pl: ['Nie','Pon','Wt','Śr','Czw','Pt','Sob'],
+    uk: ['Нд','Пн','Вт','Ср','Чт','Пт','Сб'],
+    ru: ['Вс','Пн','Вт','Ср','Чт','Пт','Сб']
   };
   const SLOT_LABELS_MAP = {
     pt: { entrada:'Entrada', saidaAlmoco:'Saída alm.', voltaAlmoco:'Volta alm.', saida:'Saída' },
     en: { entrada:'In', saidaAlmoco:'Lunch out', voltaAlmoco:'Lunch in', saida:'Out' },
-    es: { entrada:'Entrada', saidaAlmoco:'Salida alm.', voltaAlmoco:'Vuelta alm.', saida:'Salida' }
+    es: { entrada:'Entrada', saidaAlmoco:'Salida alm.', voltaAlmoco:'Vuelta alm.', saida:'Salida' },
+    pl: { entrada:'Wejście', saidaAlmoco:'Wyjście na obiad', voltaAlmoco:'Powrót z obiadu', saida:'Wyjście' },
+    uk: { entrada:'Прихід', saidaAlmoco:'Вихід на обід', voltaAlmoco:'Повернення з обіду', saida:'Вихід' },
+    ru: { entrada:'Приход', saidaAlmoco:'Уход на обед', voltaAlmoco:'Возврат с обеда', saida:'Уход' }
   };
   const PUNCH_ACTION_MAP = {
     pt: { entrada:'Bater entrada', saidaAlmoco:'Bater saída almoço', voltaAlmoco:'Bater volta almoço', saida:'Bater saída' },
     en: { entrada:'Clock in', saidaAlmoco:'Clock out (lunch)', voltaAlmoco:'Clock in (lunch)', saida:'Clock out' },
-    es: { entrada:'Fichar entrada', saidaAlmoco:'Fichar salida almuerzo', voltaAlmoco:'Fichar vuelta almuerzo', saida:'Fichar salida' }
+    es: { entrada:'Fichar entrada', saidaAlmoco:'Fichar salida almuerzo', voltaAlmoco:'Fichar vuelta almuerzo', saida:'Fichar salida' },
+    pl: { entrada:'Zarejestruj wejście', saidaAlmoco:'Zarejestruj wyjście na obiad', voltaAlmoco:'Zarejestruj powrót z obiadu', saida:'Zarejestruj wyjście' },
+    uk: { entrada:'Відмітити прихід', saidaAlmoco:'Відмітити вихід на обід', voltaAlmoco:'Відмітити повернення з обіду', saida:'Відмітити вихід' },
+    ru: { entrada:'Отметить приход', saidaAlmoco:'Отметить уход на обед', voltaAlmoco:'Отметить возврат с обеда', saida:'Отметить уход' }
   };
 
   const I18N = {
@@ -660,6 +669,120 @@
       editExtra:'Editar registro', deleteExtra:'Eliminar registro', emptyExtras:'Aún no hay registros.', confirmDeleteExtra:'¿Eliminar este registro?',
       repExtraIncome:'Ingresos extra', repExtraExpense:'Gastos', repNetTotal:'Total neto',
       syncStatus_idle:'', syncStatus_syncing:'Sincronizando…', syncStatus_synced:'Sincronizado con la nube', syncStatus_offline:'Sin conexión — cambios guardados en este dispositivo', syncStatus_error:'Error al sincronizar'
+    },
+    pl: {
+      eyebrow:'Rejestr czasu pracy', appTitle:'Karta Pracy', logout:'Wyloguj', today:'Dzisiaj',
+      punchDefault:'Zarejestruj czas', todayLabelPrefix:'Dzisiaj:', dayComplete:'Dzień zakończony', dayManual:'Dzień z ręcznie wpisaną sumą',
+      statWorkedToday:'Przepracowano dzisiaj', statBalanceDay:'Bilans dnia', statBank:'Bank godzin', statMonthExtra:'Nadgodziny w tym miesiącu', statEarnedToday:'Zarobek dzisiaj',
+      routineTitle:'Grafik pracy', workDaysLabel:'Dni robocze', dailyHoursLabel:'Dzienny wymiar godzin', hourlyRateLabel:'Stawka za godzinę', saveRoutine:'Zapisz grafik',
+      historyTitle:'Historia', addDay:'+ Dodaj dzień', emptyHistory:'Brak zarejestrowanych dni. Zarejestruj czas lub dodaj dzień ręcznie.',
+      manualTotalPrefix:'Suma ręczna:', editDay:'Edytuj dzień', deleteDay:'Usuń dzień',
+      reportsTitle:'Raporty', byMonth:'Wg miesiąca', byPeriod:'Wg okresu', monthLabel:'Miesiąc', fromLabel:'Od', toLabel:'Do', searchBtn:'Szukaj',
+      repWorked:'Przepracowano', repExpected:'Wymagane', repBalance:'Bilans', repDaysLogged:'Zarejestrowane dni', repEarned:'Zarobek w okresie', emptyReport:'Brak zarejestrowanych dni w tym zakresie.',
+      footerSynced:'Dane zsynchronizowane z chmurą', deleteAllData:'usuń wszystkie dane', confirmDeleteAll:'To usunie wszystkie wpisy i zapisany grafik z Twojego konta. Kontynuować?',
+      modalAddTitle:'Dodaj dzień', modalEditTitle:'Edytuj dzień', dateLabel:'Data', modeBatidas:'Rejestracje', modeManual:'Suma ręczna',
+      fieldEntrada:'Wejście', fieldSaidaAlmoco:'Wyjście na obiad', fieldVoltaAlmoco:'Powrót z obiadu', fieldSaida:'Wyjście',
+      totalWorkedLabel:'Łączny czas pracy', cancelBtn:'Anuluj', saveBtn:'Zapisz', alertEndBeforeStart:'Data końcowa musi być późniejsza niż data początkowa.',
+      loading:'Ładowanie…', authTabLogin:'Zaloguj się', authTabSignup:'Utwórz konto', emailLabel:'E-mail', passwordLabel:'Hasło', forgotPassword:'Nie pamiętam hasła',
+      fillEmailPassword:'Wypełnij e-mail i hasło.', enterEmailForReset:'Wpisz swój e-mail powyżej, aby zresetować hasło.', resetEmailSent:'Wysłano e-mail z linkiem do resetowania hasła.',
+      accountCreated:'Konto utworzone! Jeśli potwierdzanie e-maila jest włączone w projekcie, sprawdź skrzynkę odbiorczą przed zalogowaniem.',
+      errInvalidCredentials:'Nieprawidłowy e-mail lub hasło.', errAlreadyRegistered:'Ten e-mail jest już zarejestrowany.', errWeakPassword:'Hasło musi mieć co najmniej 6 znaków.',
+      errInvalidEmail:'Nieprawidłowy e-mail.', errEmailNotConfirmed:'Potwierdź swój e-mail (sprawdź skrzynkę odbiorczą) przed zalogowaniem.',
+      errRateLimit:'Zbyt wiele prób. Spróbuj ponownie później.', errNetwork:'Błąd połączenia. Sprawdź internet.', errGeneric:'Wystąpił błąd. Spróbuj ponownie.',
+      loadFailAlert:'Nie udało się wczytać danych. Sprawdź połączenie z internetem.', saveFailAlert:'Nie udało się zapisać. Sprawdź połączenie z internetem.',
+      exPlaceholder:'np. 8.5',
+      modeAbono:'Zwolnienie', abonoReasonLabel:'Powód (opcjonalnie)', abonoReasonPlaceholder:'np. Zwolnienie lekarskie', abonoTag:'Usprawiedliwione',
+      holidaysTitle:'Święta', holidayNameLabel:'Nazwa', holidayNamePlaceholder:'np. Rocznica miasta', addBtn:'+ Dodaj',
+      holidayTag:'Święto', nationalTag:'ustawowe',
+      remindersTitle:'Przypomnienia o rejestracji czasu', remindersEnable:'Włącz przypomnienia (aplikacja musi być otwarta)', saveReminders:'Zapisz przypomnienia',
+      remindersOn:'Przypomnienia włączone.', remindersOff:'Przypomnienia wyłączone.', notifDenied:'Przeglądarka odmówiła zgody na powiadomienia.',
+      exportPdf:'Eksportuj PDF', exportXlsx:'Eksportuj Excel',
+      chartWorkedTitle:'Godziny przepracowane w okresie', chartBalanceTitle:'Zmiana banku godzin w czasie',
+      pdfTitlePrefix:'Raport czasu pracy', pdfPeriod:'Okres', pdfGeneratedAt:'Wygenerowano', pdfColDate:'Data', pdfColTimes:'Rejestracje', pdfColWorked:'Przepracowano', pdfColBalance:'Bilans', pdfColEarned:'Zarobek',
+      xlsxSheetName:'Raport', orDivider:'lub', googleLogin:'Kontynuuj z Google',
+      currencyLabel:'Waluta', converterTitle:'Przelicznik walut (kurs na żywo)', convertToLabel:'Przelicz na', convertBtn:'Przelicz',
+      convertResultPrefix:'Zarobek w okresie po przeliczeniu', convertRateLabel:'Kurs', convertFailed:'Nie udało się pobrać kursu. Spróbuj ponownie.',
+      extrasTitle:'Dodatkowe przychody i wydatki', extraIncomeTotal:'Dodatkowe przychody', extraExpenseTotal:'Wydatki', extraBalance:'Bilans dodatkowy', addExtra:'+ Dodaj wpis',
+      extraTypeIncome:'Przychód', extraTypeExpense:'Wydatek', extraDescLabel:'Opis', extraDescPlaceholder:'np. Freelance graficzny', extraAmountLabel:'Kwota',
+      editExtra:'Edytuj wpis', deleteExtra:'Usuń wpis', emptyExtras:'Brak wpisów.', confirmDeleteExtra:'Usunąć ten wpis?',
+      repExtraIncome:'Dodatkowe przychody', repExtraExpense:'Wydatki', repNetTotal:'Suma netto',
+      syncStatus_idle:'', syncStatus_syncing:'Synchronizacja…', syncStatus_synced:'Zsynchronizowano z chmurą', syncStatus_offline:'Offline — zmiany zapisane na tym urządzeniu', syncStatus_error:'Błąd synchronizacji'
+    },
+    uk: {
+      eyebrow:'Облік робочого часу', appTitle:'Табельна картка', logout:'Вийти', today:'Сьогодні',
+      punchDefault:'Відмітити час', todayLabelPrefix:'Сьогодні:', dayComplete:'День завершено', dayManual:'День із введеною вручну сумою',
+      statWorkedToday:'Відпрацьовано сьогодні', statBalanceDay:'Баланс дня', statBank:'Банк годин', statMonthExtra:'Понаднормово цього місяця', statEarnedToday:'Заробіток сьогодні',
+      routineTitle:'Графік роботи', workDaysLabel:'Робочі дні', dailyHoursLabel:'Денна норма годин', hourlyRateLabel:'Погодинна ставка', saveRoutine:'Зберегти графік',
+      historyTitle:'Історія', addDay:'+ Додати день', emptyHistory:'Ще немає зареєстрованих днів. Відмітьте час або додайте день вручну.',
+      manualTotalPrefix:'Сума вручну:', editDay:'Редагувати день', deleteDay:'Видалити день',
+      reportsTitle:'Звіти', byMonth:'За місяцем', byPeriod:'За періодом', monthLabel:'Місяць', fromLabel:'Від', toLabel:'До', searchBtn:'Пошук',
+      repWorked:'Відпрацьовано', repExpected:'Очікувано', repBalance:'Баланс', repDaysLogged:'Зареєстровано днів', repEarned:'Заробіток за період', emptyReport:'Немає зареєстрованих днів у цьому діапазоні.',
+      footerSynced:'Дані синхронізовано з хмарою', deleteAllData:'видалити всі дані', confirmDeleteAll:'Це видалить усі записи та збережений графік з вашого облікового запису. Продовжити?',
+      modalAddTitle:'Додати день', modalEditTitle:'Редагувати день', dateLabel:'Дата', modeBatidas:'Відмітки', modeManual:'Сума вручну',
+      fieldEntrada:'Прихід', fieldSaidaAlmoco:'Вихід на обід', fieldVoltaAlmoco:'Повернення з обіду', fieldSaida:'Вихід',
+      totalWorkedLabel:'Загальний відпрацьований час', cancelBtn:'Скасувати', saveBtn:'Зберегти', alertEndBeforeStart:'Кінцева дата має бути пізніше початкової.',
+      loading:'Завантаження…', authTabLogin:'Увійти', authTabSignup:'Створити акаунт', emailLabel:'Ел. пошта', passwordLabel:'Пароль', forgotPassword:'Забув(ла) пароль',
+      fillEmailPassword:'Заповніть ел. пошту та пароль.', enterEmailForReset:'Введіть свою ел. пошту вище, щоб відновити пароль.', resetEmailSent:'Лист для відновлення пароля надіслано.',
+      accountCreated:'Акаунт створено! Якщо підтвердження ел. пошти увімкнене у вашому проєкті, перевірте вхідні перед входом.',
+      errInvalidCredentials:'Неправильна ел. пошта або пароль.', errAlreadyRegistered:'Ця ел. пошта вже зареєстрована.', errWeakPassword:'Пароль має містити щонайменше 6 символів.',
+      errInvalidEmail:'Недійсна ел. пошта.', errEmailNotConfirmed:'Підтвердьте свою ел. пошту (перевірте вхідні) перед входом.',
+      errRateLimit:'Забагато спроб. Спробуйте пізніше.', errNetwork:'Помилка з’єднання. Перевірте інтернет.', errGeneric:'Сталася помилка. Спробуйте ще раз.',
+      loadFailAlert:'Не вдалося завантажити дані. Перевірте з’єднання з інтернетом.', saveFailAlert:'Не вдалося зберегти. Перевірте з’єднання з інтернетом.',
+      exPlaceholder:'напр. 8.5',
+      modeAbono:'Відпустка', abonoReasonLabel:'Причина (необов’язково)', abonoReasonPlaceholder:'напр. Лікарняний', abonoTag:'Виправдано',
+      holidaysTitle:'Свята', holidayNameLabel:'Назва', holidayNamePlaceholder:'напр. День міста', addBtn:'+ Додати',
+      holidayTag:'Свято', nationalTag:'державне',
+      remindersTitle:'Нагадування про відмітку часу', remindersEnable:'Увімкнути нагадування (додаток має бути відкритий)', saveReminders:'Зберегти нагадування',
+      remindersOn:'Нагадування увімкнено.', remindersOff:'Нагадування вимкнено.', notifDenied:'Браузер відхилив дозвіл на сповіщення.',
+      exportPdf:'Експорт PDF', exportXlsx:'Експорт Excel',
+      chartWorkedTitle:'Відпрацьовані години за період', chartBalanceTitle:'Динаміка банку годин',
+      pdfTitlePrefix:'Звіт обліку часу', pdfPeriod:'Період', pdfGeneratedAt:'Створено', pdfColDate:'Дата', pdfColTimes:'Записи', pdfColWorked:'Відпрацьовано', pdfColBalance:'Баланс', pdfColEarned:'Заробіток',
+      xlsxSheetName:'Звіт', orDivider:'або', googleLogin:'Продовжити з Google',
+      currencyLabel:'Валюта', converterTitle:'Конвертер валют (курс у реальному часі)', convertToLabel:'Конвертувати в', convertBtn:'Конвертувати',
+      convertResultPrefix:'Заробіток за період після конвертації', convertRateLabel:'Курс', convertFailed:'Не вдалося отримати курс. Спробуйте ще раз.',
+      extrasTitle:'Додаткові доходи та витрати', extraIncomeTotal:'Додаткові доходи', extraExpenseTotal:'Витрати', extraBalance:'Додатковий баланс', addExtra:'+ Додати запис',
+      extraTypeIncome:'Дохід', extraTypeExpense:'Витрата', extraDescLabel:'Опис', extraDescPlaceholder:'напр. Фриланс-дизайн', extraAmountLabel:'Сума',
+      editExtra:'Редагувати запис', deleteExtra:'Видалити запис', emptyExtras:'Ще немає записів.', confirmDeleteExtra:'Видалити цей запис?',
+      repExtraIncome:'Додаткові доходи', repExtraExpense:'Витрати', repNetTotal:'Чиста сума',
+      syncStatus_idle:'', syncStatus_syncing:'Синхронізація…', syncStatus_synced:'Синхронізовано з хмарою', syncStatus_offline:'Офлайн — зміни збережено на цьому пристрої', syncStatus_error:'Помилка синхронізації'
+    },
+    ru: {
+      eyebrow:'Учёт рабочего времени', appTitle:'Табельная карта', logout:'Выйти', today:'Сегодня',
+      punchDefault:'Отметить время', todayLabelPrefix:'Сегодня:', dayComplete:'День завершён', dayManual:'День с введённой вручную суммой',
+      statWorkedToday:'Отработано сегодня', statBalanceDay:'Баланс дня', statBank:'Банк часов', statMonthExtra:'Переработка в этом месяце', statEarnedToday:'Заработок сегодня',
+      routineTitle:'График работы', workDaysLabel:'Рабочие дни', dailyHoursLabel:'Дневная норма часов', hourlyRateLabel:'Почасовая ставка', saveRoutine:'Сохранить график',
+      historyTitle:'История', addDay:'+ Добавить день', emptyHistory:'Пока нет зарегистрированных дней. Отметьте время или добавьте день вручную.',
+      manualTotalPrefix:'Сумма вручную:', editDay:'Редактировать день', deleteDay:'Удалить день',
+      reportsTitle:'Отчёты', byMonth:'По месяцу', byPeriod:'По периоду', monthLabel:'Месяц', fromLabel:'От', toLabel:'До', searchBtn:'Поиск',
+      repWorked:'Отработано', repExpected:'Ожидалось', repBalance:'Баланс', repDaysLogged:'Зарегистрировано дней', repEarned:'Заработок за период', emptyReport:'Нет зарегистрированных дней в этом диапазоне.',
+      footerSynced:'Данные синхронизированы с облаком', deleteAllData:'удалить все данные', confirmDeleteAll:'Это удалит все записи и сохранённый график из вашего аккаунта. Продолжить?',
+      modalAddTitle:'Добавить день', modalEditTitle:'Редактировать день', dateLabel:'Дата', modeBatidas:'Отметки', modeManual:'Сумма вручную',
+      fieldEntrada:'Приход', fieldSaidaAlmoco:'Уход на обед', fieldVoltaAlmoco:'Возврат с обеда', fieldSaida:'Уход',
+      totalWorkedLabel:'Общее отработанное время', cancelBtn:'Отмена', saveBtn:'Сохранить', alertEndBeforeStart:'Конечная дата должна быть позже начальной.',
+      loading:'Загрузка…', authTabLogin:'Войти', authTabSignup:'Создать аккаунт', emailLabel:'Эл. почта', passwordLabel:'Пароль', forgotPassword:'Забыл(а) пароль',
+      fillEmailPassword:'Заполните эл. почту и пароль.', enterEmailForReset:'Введите свою эл. почту выше, чтобы восстановить пароль.', resetEmailSent:'Письмо для восстановления пароля отправлено.',
+      accountCreated:'Аккаунт создан! Если подтверждение эл. почты включено в проекте, проверьте входящие перед входом.',
+      errInvalidCredentials:'Неверная эл. почта или пароль.', errAlreadyRegistered:'Эта эл. почта уже зарегистрирована.', errWeakPassword:'Пароль должен содержать не менее 6 символов.',
+      errInvalidEmail:'Недействительная эл. почта.', errEmailNotConfirmed:'Подтвердите свою эл. почту (проверьте входящие) перед входом.',
+      errRateLimit:'Слишком много попыток. Попробуйте позже.', errNetwork:'Ошибка соединения. Проверьте интернет.', errGeneric:'Произошла ошибка. Попробуйте снова.',
+      loadFailAlert:'Не удалось загрузить данные. Проверьте соединение с интернетом.', saveFailAlert:'Не удалось сохранить. Проверьте соединение с интернетом.',
+      exPlaceholder:'напр. 8.5',
+      modeAbono:'Отпуск', abonoReasonLabel:'Причина (необязательно)', abonoReasonPlaceholder:'напр. Больничный', abonoTag:'Оправдано',
+      holidaysTitle:'Праздники', holidayNameLabel:'Название', holidayNamePlaceholder:'напр. День города', addBtn:'+ Добавить',
+      holidayTag:'Праздник', nationalTag:'государственный',
+      remindersTitle:'Напоминания об отметке времени', remindersEnable:'Включить напоминания (приложение должно быть открыто)', saveReminders:'Сохранить напоминания',
+      remindersOn:'Напоминания включены.', remindersOff:'Напоминания выключены.', notifDenied:'Браузер отклонил разрешение на уведомления.',
+      exportPdf:'Экспорт PDF', exportXlsx:'Экспорт Excel',
+      chartWorkedTitle:'Отработанные часы за период', chartBalanceTitle:'Динамика банка часов',
+      pdfTitlePrefix:'Отчёт учёта времени', pdfPeriod:'Период', pdfGeneratedAt:'Создано', pdfColDate:'Дата', pdfColTimes:'Записи', pdfColWorked:'Отработано', pdfColBalance:'Баланс', pdfColEarned:'Заработок',
+      xlsxSheetName:'Отчёт', orDivider:'или', googleLogin:'Продолжить с Google',
+      currencyLabel:'Валюта', converterTitle:'Конвертер валют (курс в реальном времени)', convertToLabel:'Конвертировать в', convertBtn:'Конвертировать',
+      convertResultPrefix:'Заработок за период после конвертации', convertRateLabel:'Курс', convertFailed:'Не удалось получить курс. Попробуйте снова.',
+      extrasTitle:'Дополнительные доходы и расходы', extraIncomeTotal:'Дополнительные доходы', extraExpenseTotal:'Расходы', extraBalance:'Дополнительный баланс', addExtra:'+ Добавить запись',
+      extraTypeIncome:'Доход', extraTypeExpense:'Расход', extraDescLabel:'Описание', extraDescPlaceholder:'напр. Фриланс-дизайн', extraAmountLabel:'Сумма',
+      editExtra:'Редактировать запись', deleteExtra:'Удалить запись', emptyExtras:'Пока нет записей.', confirmDeleteExtra:'Удалить эту запись?',
+      repExtraIncome:'Дополнительные доходы', repExtraExpense:'Расходы', repNetTotal:'Итого нетто',
+      syncStatus_idle:'', syncStatus_syncing:'Синхронизация…', syncStatus_synced:'Синхронизировано с облаком', syncStatus_offline:'Офлайн — изменения сохранены на этом устройстве', syncStatus_error:'Ошибка синхронизации'
     }
   };
 
@@ -722,7 +845,10 @@
   const CURRENCY_NAMES = {
     pt:{BRL:'Real brasileiro',USD:'Dólar americano',EUR:'Euro',PLN:'Zloty polonês',GBP:'Libra esterlina',JPY:'Iene japonês',CNY:'Yuan chinês',CAD:'Dólar canadense',AUD:'Dólar australiano',CHF:'Franco suíço',MXN:'Peso mexicano',INR:'Rupia indiana',ZAR:'Rand sul-africano',SEK:'Coroa sueca',NOK:'Coroa norueguesa',DKK:'Coroa dinamarquesa',HUF:'Florim húngaro',CZK:'Coroa tcheca',TRY:'Lira turca',KRW:'Won sul-coreano',SGD:'Dólar de Cingapura',HKD:'Dólar de Hong Kong',NZD:'Dólar neozelandês',THB:'Baht tailandês',ILS:'Novo shekel israelense',RON:'Leu romeno',BGN:'Lev búlgaro',IDR:'Rupia indonésia',MYR:'Ringgit malaio',PHP:'Peso filipino'},
     en:{BRL:'Brazilian Real',USD:'US Dollar',EUR:'Euro',PLN:'Polish Zloty',GBP:'British Pound',JPY:'Japanese Yen',CNY:'Chinese Yuan',CAD:'Canadian Dollar',AUD:'Australian Dollar',CHF:'Swiss Franc',MXN:'Mexican Peso',INR:'Indian Rupee',ZAR:'South African Rand',SEK:'Swedish Krona',NOK:'Norwegian Krone',DKK:'Danish Krone',HUF:'Hungarian Forint',CZK:'Czech Koruna',TRY:'Turkish Lira',KRW:'South Korean Won',SGD:'Singapore Dollar',HKD:'Hong Kong Dollar',NZD:'New Zealand Dollar',THB:'Thai Baht',ILS:'Israeli Shekel',RON:'Romanian Leu',BGN:'Bulgarian Lev',IDR:'Indonesian Rupiah',MYR:'Malaysian Ringgit',PHP:'Philippine Peso'},
-    es:{BRL:'Real brasileño',USD:'Dólar estadounidense',EUR:'Euro',PLN:'Zloty polaco',GBP:'Libra esterlina',JPY:'Yen japonés',CNY:'Yuan chino',CAD:'Dólar canadiense',AUD:'Dólar australiano',CHF:'Franco suizo',MXN:'Peso mexicano',INR:'Rupia india',ZAR:'Rand sudafricano',SEK:'Corona sueca',NOK:'Corona noruega',DKK:'Corona danesa',HUF:'Florín húngaro',CZK:'Corona checa',TRY:'Lira turca',KRW:'Won surcoreano',SGD:'Dólar de Singapur',HKD:'Dólar de Hong Kong',NZD:'Dólar neozelandés',THB:'Baht tailandés',ILS:'Nuevo shekel israelí',RON:'Leu rumano',BGN:'Lev búlgaro',IDR:'Rupia indonesia',MYR:'Ringgit malayo',PHP:'Peso filipino'}
+    es:{BRL:'Real brasileño',USD:'Dólar estadounidense',EUR:'Euro',PLN:'Zloty polaco',GBP:'Libra esterlina',JPY:'Yen japonés',CNY:'Yuan chino',CAD:'Dólar canadiense',AUD:'Dólar australiano',CHF:'Franco suizo',MXN:'Peso mexicano',INR:'Rupia india',ZAR:'Rand sudafricano',SEK:'Corona sueca',NOK:'Corona noruega',DKK:'Corona danesa',HUF:'Florín húngaro',CZK:'Corona checa',TRY:'Lira turca',KRW:'Won surcoreano',SGD:'Dólar de Singapur',HKD:'Dólar de Hong Kong',NZD:'Dólar neozelandés',THB:'Baht tailandés',ILS:'Nuevo shekel israelí',RON:'Leu rumano',BGN:'Lev búlgaro',IDR:'Rupia indonesia',MYR:'Ringgit malayo',PHP:'Peso filipino'},
+    pl:{BRL:'Real brazylijski',USD:'Dolar amerykański',EUR:'Euro',PLN:'Złoty polski',GBP:'Funt szterling',JPY:'Jen japoński',CNY:'Juan chiński',CAD:'Dolar kanadyjski',AUD:'Dolar australijski',CHF:'Frank szwajcarski',MXN:'Peso meksykańskie',INR:'Rupia indyjska',ZAR:'Rand południowoafrykański',SEK:'Korona szwedzka',NOK:'Korona norweska',DKK:'Korona duńska',HUF:'Forint węgierski',CZK:'Korona czeska',TRY:'Lira turecka',KRW:'Won południowokoreański',SGD:'Dolar singapurski',HKD:'Dolar hongkoński',NZD:'Dolar nowozelandzki',THB:'Bat tajski',ILS:'Nowy szekel izraelski',RON:'Lej rumuński',BGN:'Lew bułgarski',IDR:'Rupia indonezyjska',MYR:'Ringgit malezyjski',PHP:'Peso filipińskie'},
+    uk:{BRL:'Бразильський реал',USD:'Долар США',EUR:'Євро',PLN:'Польський злотий',GBP:'Фунт стерлінгів',JPY:'Японська єна',CNY:'Китайський юань',CAD:'Канадський долар',AUD:'Австралійський долар',CHF:'Швейцарський франк',MXN:'Мексиканське песо',INR:'Індійська рупія',ZAR:'Південноафриканський ранд',SEK:'Шведська крона',NOK:'Норвезька крона',DKK:'Данська крона',HUF:'Угорський форинт',CZK:'Чеська крона',TRY:'Турецька ліра',KRW:'Південнокорейська вона',SGD:'Сінгапурський долар',HKD:'Гонконгський долар',NZD:'Новозеландський долар',THB:'Тайський бат',ILS:'Новий ізраїльський шекель',RON:'Румунський лей',BGN:'Болгарський лев',IDR:'Індонезійська рупія',MYR:'Малайзійський рингіт',PHP:'Філіппінське песо'},
+    ru:{BRL:'Бразильский реал',USD:'Доллар США',EUR:'Евро',PLN:'Польский злотый',GBP:'Фунт стерлингов',JPY:'Японская иена',CNY:'Китайский юань',CAD:'Канадский доллар',AUD:'Австралийский доллар',CHF:'Швейцарский франк',MXN:'Мексиканское песо',INR:'Индийская рупия',ZAR:'Южноафриканский рэнд',SEK:'Шведская крона',NOK:'Норвежская крона',DKK:'Датская крона',HUF:'Венгерский форинт',CZK:'Чешская крона',TRY:'Турецкая лира',KRW:'Южнокорейская вона',SGD:'Сингапурский доллар',HKD:'Гонконгский доллар',NZD:'Новозеландский доллар',THB:'Тайский бат',ILS:'Новый израильский шекель',RON:'Румынский лей',BGN:'Болгарский лев',IDR:'Индонезийская рупия',MYR:'Малайзийский рингит',PHP:'Филиппинское песо'}
   };
 
   function defaultState(){
