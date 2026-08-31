@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cartao-de-ponto-v4';
+const CACHE_NAME = 'cartao-de-ponto-v5';
 const ASSETS = [
   './',
   './index.html',

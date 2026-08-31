@@ -37,7 +37,7 @@
     --radius:14px;
   }
   *{box-sizing:border-box;}
-  html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100%;}
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100%;overflow-x:hidden;width:100%;}
   .app{max-width:760px;margin:0 auto;padding:20px 16px 60px;padding-top:calc(20px + env(safe-area-inset-top));}
   .mono{font-family:'Space Mono',monospace;}
 
@@ -151,8 +151,8 @@
   .sync-badge.idle{color:var(--text-muted);}
 
   /* ---------- login / cadastro ---------- */
-  .loading-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:13px;}
-  .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .loading-screen{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--text-muted);font-size:13px;width:100%;}
+  .auth-wrap{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:20px;width:100%;box-sizing:border-box;}
   .auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;max-width:360px;width:100%;box-shadow:0 20px 40px -20px rgba(0,0,0,.6);}
   .auth-brand{text-align:center;margin-bottom:22px;}
   .auth-brand .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:4px;}
