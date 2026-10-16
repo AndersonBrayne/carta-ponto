@@ -1003,6 +1003,9 @@
   let syncStatus = 'idle'; // idle | syncing | synced | offline | error
   let scheduledSyncTimer = null;
   let periodicRetryTimer = null;
+  // Evita sincronizações concorrentes e garante nova rodada se houver alterações durante o envio.
+  let syncInProgress = false;
+  let syncRequested = false;
 
   function localKey(){ return 'ponto-cache-'+currentUid; }
   function saveLocalCache(){
@@ -1079,24 +1082,49 @@
   async function trySync(){
     if(!currentUid) return;
     if(!navigator.onLine){ setSyncStatus('offline'); return; }
-    setSyncStatus('syncing');
+    if(syncInProgress){
+      // Uma alteração ou evento de rede ocorreu durante a rodada atual.
+      syncRequested = true;
+      return;
+    }
+
+    syncInProgress = true;
     try{
-      const remote = await fetchRemote();
-      if(remote){
-        const merged = mergeAll(state, remote);
-        state.entries = merged.entries;
-        state.extras = merged.extras;
-        state.tombstones = merged.tombstones;
-        state.settings = migrateSettings(merged.settings);
+      do {
+        syncRequested = false;
+        if(!currentUid) return;
+        if(!navigator.onLine){ setSyncStatus('offline'); break; }
+
+        setSyncStatus('syncing');
+        try{
+          const remote = await fetchRemote();
+          // Mescla com o estado local mais recente, preservando edições feitas enquanto a rede respondia.
+          if(remote){
+            const merged = mergeAll(state, remote);
+            state.entries = merged.entries;
+            state.extras = merged.extras;
+            state.tombstones = merged.tombstones;
+            state.settings = migrateSettings(merged.settings);
+          }
+          saveLocalCache();
+          await pushRemote();
+          // Se o usuário alterou algo durante o envio, saveData/scheduleSync pedirá outra rodada.
+          renderAll();
+          runReport();
+          setSyncStatus('synced');
+        }catch(e){
+          console.error('Falha ao sincronizar', e);
+          setSyncStatus(navigator.onLine ? 'error' : 'offline');
+          break;
+        }
+      } while(syncRequested && currentUid && navigator.onLine);
+    } finally {
+      syncInProgress = false;
+      // Trata pedido que chegou no limite entre o fim do loop e a liberação do bloqueio.
+      if(syncRequested && currentUid && navigator.onLine){
+        syncRequested = false;
+        scheduleSync();
       }
-      await pushRemote();
-      saveLocalCache();
-      renderAll();
-      runReport();
-      setSyncStatus('synced');
-    }catch(e){
-      console.error('Falha ao sincronizar', e);
-      setSyncStatus('offline');
     }
   }
   function scheduleSync(){
