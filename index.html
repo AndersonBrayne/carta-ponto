@@ -261,6 +261,32 @@
     .stat .stat-val{font-size:16px;}
     .brand h1{font-size:17px;}
   }
+
+  /* ---------- redesign em cards: branch melhorias/analise-inicial ---------- */
+  .summary-bar{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0 20px;}
+  .stat{min-height:104px;padding:16px;border-radius:16px;display:flex;flex-direction:column;justify-content:space-between;}
+  .stat .stat-lbl{font-size:10px;line-height:1.35;letter-spacing:.08em;margin-bottom:12px;}
+  .stat .stat-val{font-size:21px;line-height:1.2;}
+  .hist-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px 14px 16px;}
+  .hist-row{min-width:0;min-height:126px;align-items:flex-start;flex-direction:column;gap:12px;padding:14px;border:1px solid var(--border);border-radius:14px;background:linear-gradient(145deg,var(--surface-2),rgba(35,43,55,.72));}
+  .hist-left{width:100%;align-items:flex-start;gap:10px;}
+  .hist-date{min-width:48px;}
+  .hist-times{white-space:normal;line-height:1.6;overflow-wrap:anywhere;}
+  .hist-right{width:100%;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+  .hist-worked{font-size:14px;}
+  .hist-earn{font-size:11px;}
+  .hist-saldo{font-size:11px;}
+  section.block{border-radius:16px;}
+  .punch-card{border-radius:18px;}
+  @media(max-width:480px){
+    .summary-bar{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
+    .stat{min-height:96px;padding:13px 11px;}
+    .stat .stat-val{font-size:18px;}
+    .hist-list{grid-template-columns:1fr;gap:9px;padding:10px 12px 14px;}
+    .hist-row{min-height:0;}
+    .hist-right{justify-content:flex-start;gap:12px;}
+  }
+
 </style>
 </head>
 <body>
