@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cartao-de-ponto-v7';
+const CACHE_NAME = 'cartao-de-ponto-v8';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -10,7 +10,6 @@ const APP_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    // Um arquivo opcional ausente não deve impedir a instalação do service worker.
     await Promise.all(APP_ASSETS.map(async (asset) => {
       try {
         const response = await fetch(asset, { cache: 'reload' });
@@ -35,11 +34,33 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;
 
+  // A página principal sempre tenta buscar a versão mais recente na rede.
+  // A cópia em cache só é usada se o aparelho estiver sem conexão.
+  if (request.mode === 'navigate') {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      try {
+        const response = await fetch(request, { cache: 'no-store' });
+        if (response && response.ok) {
+          await cache.put('./index.html', response.clone()).catch(() => {});
+          return response;
+        }
+      } catch (error) {
+        // Continua para a cópia offline.
+      }
+      return (await cache.match('./index.html')) ||
+        new Response('Você está offline e a página ainda não está disponível neste aparelho.', {
+          status: 503,
+          statusText: 'Offline',
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        });
+    })());
+    return;
+  }
+
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
     const cached = await cache.match(request);
-
-    // Para navegação, usa a versão local se a rede estiver indisponível.
     if (cached) return cached;
 
     try {
@@ -49,10 +70,6 @@ self.addEventListener('fetch', (event) => {
       }
       return response;
     } catch (error) {
-      if (request.mode === 'navigate') {
-        const appPage = await cache.match('./index.html');
-        if (appPage) return appPage;
-      }
       return new Response('Você está offline e este recurso ainda não foi armazenado neste aparelho.', {
         status: 503,
         statusText: 'Offline',
